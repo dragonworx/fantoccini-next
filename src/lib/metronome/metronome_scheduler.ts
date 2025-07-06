@@ -16,6 +16,9 @@ export class MetronomeScheduler {
   private _tempoBeat: number;
   private _rhythmPattern: number[] | null;
   private _patternIndex: number = 0;
+  private _remainingInterval: number | null = null;
+  private _lastPauseTime: number | null = null;
+  private _resumeNextIsFirst: boolean = false;
 
   /**
    * Create a new MetronomeScheduler.
@@ -75,6 +78,12 @@ export class MetronomeScheduler {
       clearTimeout(this._timer);
       this._timer = null;
     }
+    // Calculate remaining interval until next pulse
+    if (this._expectedNextSysMs > 0) {
+      this._lastPauseTime = Date.now();
+      this._remainingInterval = this._expectedNextSysMs - this._lastPauseTime;
+      if (this._remainingInterval < 0) this._remainingInterval = 0;
+    }
   }
 
   /**
@@ -83,9 +92,37 @@ export class MetronomeScheduler {
    * @param onPulseCallback
    */
   resume(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
+    if (this._running) return; // Prevent multiple timers
     if (tempoBeat !== undefined) this._tempoBeat = tempoBeat;
-    this._running = true;
-    this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
+    // If we have a remaining interval from pause, use it for the first pulse, but always set _expectedNextSysMs to now + normal interval
+    if (this._remainingInterval !== null) {
+      this._running = true;
+      this._resumeNextIsFirst = true;
+      const delay = this._remainingInterval;
+      this._remainingInterval = null;
+      setTimeout(
+        () => {
+          if (!this._running) return;
+          onPulseCallback?.();
+          // After first resumed pulse, set _expectedNextSysMs to now + normal interval
+          let interval;
+          if (this._rhythmPattern && this._rhythmPattern.length > 0) {
+            this._patternIndex =
+              (this._patternIndex + 1) % this._rhythmPattern.length;
+            interval =
+              this._tempoBeat * this._rhythmPattern[this._patternIndex];
+          } else {
+            interval = this._tempoBeat;
+          }
+          this._expectedNextSysMs = Date.now() + interval;
+          this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
+        },
+        Math.max(0, delay),
+      );
+    } else {
+      this._running = true;
+      this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
+    }
   }
 
   /**
@@ -107,6 +144,7 @@ export class MetronomeScheduler {
   private _schedulePulse(
     tempoBeat: number,
     onPulseCallback: PulseCallback,
+    isResume: boolean = false,
   ): void {
     if (!this._running) return;
 
@@ -117,8 +155,12 @@ export class MetronomeScheduler {
       interval = tempoBeat * this._rhythmPattern[this._patternIndex];
     }
 
-    if (this._expectedNextSysMs === 0) {
+    if (this._expectedNextSysMs === 0 || isResume) {
       this._expectedNextSysMs = currentTime + interval;
+      // If resuming, after this first pulse, reset _expectedNextSysMs to use normal interval from now
+      if (isResume) {
+        this._resumeNextIsFirst = true;
+      }
     }
 
     const actualInterval = this._expectedNextSysMs - currentTime;
@@ -127,7 +169,7 @@ export class MetronomeScheduler {
       () => {
         onPulseCallback();
 
-        // Schedule next pulse
+        // Normal scheduling after resume
         if (this._rhythmPattern && this._rhythmPattern.length > 0) {
           this._patternIndex =
             (this._patternIndex + 1) % this._rhythmPattern.length;
@@ -175,5 +217,10 @@ export class MetronomeScheduler {
   dispose(): void {
     this.stop();
     this._pulseController = [];
+    this._remainingInterval = null;
+    this._lastPauseTime = null;
+    this._resumeNextIsFirst = false;
+    this._expectedNextSysMs = 0;
+    this._running = false;
   }
 }

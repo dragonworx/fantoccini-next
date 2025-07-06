@@ -113,6 +113,7 @@ describe("MetronomeScheduler", () => {
 
   it("should pause and resume", async () => {
     const pulses: Pulse[] = [];
+    const pulseTimes: number[] = [];
     const pulseObj = new Pulse({
       pulse: 1,
       pulses: 4,
@@ -123,7 +124,10 @@ describe("MetronomeScheduler", () => {
       isNewBeat: true,
     });
 
-    scheduler.onPulse((p) => pulses.push(p));
+    scheduler.onPulse((p) => {
+      pulses.push(p);
+      pulseTimes.push(Date.now());
+    });
     let count = 0;
     scheduler.start(30, () => {
       scheduler.emitPulse(pulseObj);
@@ -134,6 +138,9 @@ describe("MetronomeScheduler", () => {
     await wait(100);
     expect(pulses.length).toBe(2);
 
+    // Capture time between first two pulses
+    const intervalBefore = pulseTimes[1] - pulseTimes[0];
+
     scheduler.resume(30, () => {
       scheduler.emitPulse(pulseObj);
       count++;
@@ -142,6 +149,20 @@ describe("MetronomeScheduler", () => {
 
     await wait(100);
     expect(pulses.length).toBeGreaterThanOrEqual(4);
+
+    // Capture time between pulses after resume
+    const intervalAfter = pulseTimes[3] - pulseTimes[2];
+
+    // The intervals before and after should be similar (within 50% margin)
+    expect(intervalAfter).toBeGreaterThan(0);
+    expect(intervalBefore).toBeGreaterThan(0);
+    expect(intervalAfter).toBeLessThan(intervalBefore * 2);
+    expect(intervalAfter).toBeGreaterThan(intervalBefore * 0.5);
+
+    // Ensure only one timer is running (simulate by checking no double pulses)
+    for (let i = 1; i < pulseTimes.length; ++i) {
+      expect(pulseTimes[i] - pulseTimes[i - 1]).toBeGreaterThan(10);
+    }
   });
 });
 

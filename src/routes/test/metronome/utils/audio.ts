@@ -1,0 +1,67 @@
+// Web Audio utility for metronome pulse and measure sounds
+
+const PULSE_VOLUME = 0.1; // 50% of previous value (was 0.2)
+
+let audioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+export function playPulseSound({
+  isNewMeasure = false,
+  isNewBeat = false,
+}: {
+  isNewMeasure?: boolean;
+  isNewBeat?: boolean;
+} = {}) {
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+
+  // Oscillator for the pulse
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  // Sound parameters
+  let frequency = 1000; // default for off-beat
+  let duration = 0.05; // seconds
+
+  if (isNewMeasure) {
+    frequency = 1760; // A6, higher pitch for new measure
+    duration = 0.12;
+  } else if (isNewBeat) {
+    frequency = 1320; // E6, mid pitch for new beat
+    duration = 0.08;
+  }
+
+  osc.type = "square";
+  osc.frequency.setValueAtTime(frequency, now);
+
+  // Envelope for clicky sound
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(PULSE_VOLUME, now + 0.005);
+  gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(now);
+  osc.stop(now + duration + 0.01);
+
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+  };
+}
+
+// Optionally, a function to unlock audio context on user gesture
+export function unlockAudioContext() {
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") {
+    ctx.resume();
+  }
+}
