@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
+    import { fade } from "svelte/transition";
     import { Metronome } from "$lib/metronome/metronome";
     import {
         Rhythm,
@@ -459,61 +460,28 @@
         {/each}
     </div>
 
-    {#if currentPulse as pulse}
-        <div class="pulse-info">
+    {#if currentPulse}
+        <div class="pulse-info" transition:fade={{ duration: 1000 }}>
             <div>
                 <strong>Measure:</strong>
-                <span class="fixed-num">{pulse.measure}</span>
+                <span class="fixed-num">{currentPulse?.measure}</span>
                 &nbsp;|&nbsp;
                 <strong>Beat:</strong>
-                <span class="fixed-num">{pulse.beat}</span>
+                <span class="fixed-num">{currentPulse?.beat}</span>
                 &nbsp;|&nbsp;
                 <strong>Pulse:</strong>
-                <span class="fixed-num">{pulse.pulse}</span>
+                <span class="fixed-num">{currentPulse?.pulse}</span>
                 &nbsp;|&nbsp;
                 <strong>Subdivs:</strong>
-                <span class="fixed-num">{pulse.subdivs}</span>
+                <span class="fixed-num">{currentPulse?.subdivs}</span>
                 &nbsp;|&nbsp;
                 <strong>isNewBeat:</strong>
-                <span class="fixed-yesno">{pulse.isNewBeat ? "Yes" : "No"}</span
+                <span class="fixed-yesno"
+                    >{currentPulse?.isNewBeat ? "Yes" : "No"}</span
                 >
             </div>
         </div>
     {/if}
-</div>
-<div class="pulse-info">
-    <div>
-        <strong>Measure:</strong>
-        {currentPulse.measure}
-        &nbsp;|&nbsp;
-        <strong>Beat:</strong>
-        {currentPulse.beat}
-        &nbsp;|&nbsp;
-        <strong>Pulse:</strong>
-        {currentPulse.pulse}
-        &nbsp;|&nbsp;
-        <strong>Subdivs:</strong>
-        {currentPulse.subdivs}
-        &nbsp;|&nbsp;
-        <strong>isNewBeat:</strong>
-        {currentPulse.isNewBeat ? "Yes" : "No"}
-    </div>
-</div>
-<div>
-    <strong>Measure:</strong>
-    {currentPulse.measure}
-    &nbsp;|&nbsp;
-    <strong>Beat:</strong>
-    {currentPulse.beat}
-    &nbsp;|&nbsp;
-    <strong>Pulse:</strong>
-    {currentPulse.pulse}
-    &nbsp;|&nbsp;
-    <strong>Subdivs:</strong>
-    {currentPulse.subdivs}
-    &nbsp;|&nbsp;
-    <strong>isNewBeat:</strong>
-    {currentPulse.isNewBeat ? "Yes" : "No"}
 </div>
 
 <style>
@@ -523,7 +491,6 @@
     }
 
     .dark {
-        background: #181c24;
         color: #e3e9f3;
     }
     .page-center {
@@ -535,7 +502,6 @@
         max-width: 100vw;
         padding: 2.5rem 0 2rem 0;
         box-sizing: border-box;
-        background: #181c24;
         overflow-x: hidden;
     }
     .controls-grid {
@@ -556,7 +522,6 @@
     }
     .footer {
         width: 100vw;
-        background: #181c24;
         color: #8ca0b3;
         text-align: center;
         padding: 1rem 0 0.5rem 0;

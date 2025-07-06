@@ -19,9 +19,9 @@
 
     <footer>
         <p>
-            &copy; 2025 Ali Chamas <a href="github/dragonworx"
-                >github/dragonworx</a
-            >
+            &copy; 2025 Fantoccini - Ali Chamas <a
+                href="https://github.com/dragonworx">github/dragonworx</a
+            > - all rights reserved.
         </p>
     </footer>
 </div>
@@ -31,6 +31,7 @@
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        box-shadow: 10px 10px 32px 0 rgba(0, 0, 0, 0.35);
     }
 
     header {
@@ -50,13 +51,13 @@
     }
 
     nav a {
-        color: #aaa;
+        color: lightskyblue;
         text-decoration: none;
         font-weight: 500;
     }
 
     nav a:hover {
-        color: #ff3e00;
+        color: #aaa;
     }
 
     main {
@@ -66,9 +67,9 @@
     }
 
     footer {
-        background-color: #f8f9fa;
+        background: #181c24;
         padding: 1rem;
-        border-top: 1px solid #e9ecef;
+        border-top: 1px solid #505050;
         text-align: center;
         color: #666;
     }
