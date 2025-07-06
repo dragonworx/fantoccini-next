@@ -10,6 +10,7 @@
     export let currentValue: number = 0;
     export let size: number = DEFAULT_SIZE;
     export let strokeWidth: number = DEFAULT_STROKE_WIDTH;
+    export let color: string = ARC_FG_COLOR;
 
     // Clamp value between min and max
     function clamp(val: number, min: number, max: number) {
@@ -17,6 +18,7 @@
     }
 
     $: progress = (clamp(currentValue, min, max) - min) / (max - min);
+
     $: radius = (size - strokeWidth) / 2;
     $: circumference = 2 * Math.PI * radius;
     $: arcLength = progress * circumference;
@@ -51,12 +53,12 @@
         cy={center}
         r={radius}
         fill="none"
-        stroke={ARC_FG_COLOR}
+        stroke={color}
         stroke-width={strokeWidth}
         stroke-linecap="round"
         stroke-dasharray={dashArray}
         stroke-dashoffset={circumference / 4}
-        style="transition: none;"
+        style="transition: stroke-dasharray 0.025s linear;"
         transform={`rotate(-90 ${center} ${center})`}
     />
 </svg>

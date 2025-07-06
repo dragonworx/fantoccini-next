@@ -104,7 +104,7 @@ export class Metronome {
       pulse: this._pulse,
       pulses: settings.pulsesPerMeasure,
       subdivs: subdivisionsInCurrentBeat,
-      complete: (this._pulse - 1) / settings.pulsesPerMeasure,
+      complete: this._pulse / settings.pulsesPerMeasure,
       measure: this._measure,
       beat: this._beat,
       isDownBeat: (this._pulse - 1) % subdivisionsInCurrentBeat === 0,

@@ -20,31 +20,80 @@
     let animationFrameId: number | null = null;
 
     // Returns an array of progress values (0 to 1) for each subdivision dial
+    // Persistent array to track isDownBeat for each dial in the current measure
+    let dialMeta: { isDownBeat: boolean }[] = [];
+
+    function resetDialMeta(subDivisions: number) {
+        dialMeta = [];
+        for (let i = 0; i < subDivisions; i++) {
+            dialMeta.push({
+                isDownBeat: i === 0 || i % subDivisions === 0,
+            });
+        }
+    }
+
     function getDialValues(
         currentPulse: Pulse | null,
         subDivisions: number,
-    ): number[] {
+    ): { value: number; isDownBeat: boolean }[] {
         // Use currentPulse.subdivs for dial count if available, else fallback to UI subDivisions
-        const dialCount = currentPulse?.subdivs ?? subDivisions;
+        const usedSubdivs = currentPulse?.subdivs ?? subDivisions;
+        const dialCount = usedSubdivs;
+        if (dialMeta.length !== dialCount) {
+            resetDialMeta(dialCount);
+        }
         if (dialCount < 1) return [];
-        const values: number[] = [];
+        const values: { value: number; isDownBeat: boolean }[] = [];
         if (!currentPulse) {
             // Show all dials as empty until first pulse
-            for (let i = 0; i < dialCount; i++) values.push(0);
+            for (let i = 0; i < dialCount; i++)
+                values.push({
+                    value: 0,
+                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+                });
+            return values;
+        }
+        // If the measure is complete (measureProgress is 1 or more), all dials should be full.
+        if (measureProgress >= 1) {
+            for (let i = 0; i < dialCount; i++)
+                values.push({
+                    value: 1,
+                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+                });
             return values;
         }
         // measureProgress: 0..1 for the whole measure
         // Find which dial is active
         const totalProgress = measureProgress * dialCount;
-        const activeDialIndex = Math.floor(totalProgress);
-        const progressWithinSubdivision = totalProgress - activeDialIndex;
+        // Add EPSILON to handle floating point inaccuracies near integer boundaries
+        const activeDialIndex = Math.floor(totalProgress + Number.EPSILON);
+        let progressWithinSubdivision = totalProgress - activeDialIndex;
+
+        // Apply snapping for visual consistency at boundaries
+        const EPSILON = 0.05; // Increased threshold to ensure dials snap to 1 (full) more visibly at segment end
+        if (progressWithinSubdivision >= 1 - EPSILON) {
+            progressWithinSubdivision = 1; // Snap to 1 if very close to end
+        } else if (progressWithinSubdivision <= EPSILON && totalProgress > 0) {
+            // Only snap to 0 if progress has actually started, to avoid initial partial fill
+            progressWithinSubdivision = 0; // Snap to 0 if very close to start
+        }
+
         for (let i = 0; i < dialCount; i++) {
             if (i < activeDialIndex) {
-                values.push(1);
+                values.push({
+                    value: 1,
+                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+                });
             } else if (i === activeDialIndex) {
-                values.push(progressWithinSubdivision);
+                values.push({
+                    value: progressWithinSubdivision,
+                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+                });
             } else {
-                values.push(0);
+                values.push({
+                    value: 0,
+                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+                });
             }
         }
         return values;
@@ -226,7 +275,7 @@
         }
         metronome = new Metronome(settings);
 
-        // Set up pulse visualization
+        // Set up pulseSquares for the measure
         const totalPulses = settings.pulsesPerMeasure;
         pulseSquares = Array.from({ length: totalPulses }, (_, i) => ({
             pulse: i + 1,
@@ -234,9 +283,10 @@
             lit: false,
             fading: false,
         }));
-
-        pulses = [];
         currentPulse = null;
+
+        // Reset dialMeta for the new measure
+        resetDialMeta(settings.subDivisions);
 
         function lightUpPulse(idx: number, colorClass: string) {
             // Defensive: only update if idx is in bounds
@@ -257,7 +307,7 @@
                     pulseSquares[idx].fading = false;
                     pulseSquares = [...pulseSquares];
                 }, 100);
-            }, 100);
+            }, 180);
         }
 
         metronome.onPulse((p: Pulse) => {
@@ -271,20 +321,17 @@
             // --- True measure-based dial progress timing ---
             // Duration of a measure in ms: beats per measure * ms per beat
             measureDuration = (60000 / bpm) * upper;
-            // Recalculate measureStartTime so that measureProgress is always in sync
-            // If currentPulse.complete is 0.5, measure started half a measure ago
-            measureStartTime =
-                performance.now() -
-                (currentPulse?.complete ?? 0) * measureDuration;
-            // Snap measureProgress to currentPulse.complete at pulse event
-            measureProgress = currentPulse?.complete ?? 0;
+            measureStartTime = performance.now();
+            measureProgress = 0;
+            // Reset dialMeta at the start of each measure
+            resetDialMeta(settings.subDivisions);
+            animateProgress();
+        });
 
-            // Play audio for pulse
-            if (audioOn) {
-                playPulseSound({
-                    isNewMeasure: p.pulse === 1 && p.beat === 1,
-                    isDownBeat: p.isDownBeat,
-                });
+        metronome.onEvent((event) => {
+            if (event === "stop") {
+                measureProgress = 0;
+                currentPulse = null;
             }
         });
     }
@@ -303,7 +350,7 @@
             }));
             currentPulse = null;
         } else {
-            if (!metronome) createMetronome();
+            createMetronome(); // Always create a new instance to ensure fresh audio state
             metronome?.start();
             running = true;
             paused = false;
@@ -386,6 +433,8 @@
                 // Use pulse index as "current" instead of "previous" for base progress
                 // This fixes the lag by a segment
                 const base = currentPulse.pulse / currentPulse.pulses;
+                // Interpolate between previous and current pulse's complete value
+                // but anchor to the "current" pulse position
                 // Interpolate between previous and current pulse's complete value
                 // but anchor to the "current" pulse position
                 measureProgress = Math.min(
@@ -530,9 +579,21 @@
             class="dial-row"
             style="display: flex; justify-content: center; gap: 1.5em; margin-bottom: 1.2em;"
         >
-            {#each getDialValues(currentPulse, subDivisions) as value, i (i)}
-                <DialProgress min={0} max={1} currentValue={value} size={48} />
-            {/each}
+            {#if currentPulse}
+                {#each getDialValues(currentPulse, subDivisions) as dial, i (i)}
+                    <DialProgress
+                        min={0}
+                        max={1}
+                        currentValue={dial.value}
+                        size={48}
+                        color={dial.value >= 1
+                            ? dial.isDownBeat
+                                ? "#4f8cff"
+                                : "#fff"
+                            : "#1ed760"}
+                    />
+                {/each}
+            {/if}
         </div>
         <div class="button-row">
             <div class="button-group">
