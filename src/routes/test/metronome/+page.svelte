@@ -1,6 +1,5 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
-    import { fade } from "svelte/transition";
     import { Metronome } from "$lib/metronome/metronome";
     import {
         Rhythm,
@@ -9,8 +8,47 @@
         quarter,
         semiquaver,
     } from "$lib/metronome";
+    import LaunchAudioDialog from "$lib/components/LaunchAudioDialog.svelte";
     import { Pulse } from "$lib/metronome/pulse";
     import { playPulseSound, unlockAudioContext } from "./utils/audio";
+    import DialProgress from "$lib/components/DialProgress.svelte";
+
+    // For true measure-based dial progress
+    let measureProgress = 0; // 0.0 - 1.0
+    let measureStartTime = 0;
+    let measureDuration = 0;
+    let animationFrameId: number | null = null;
+
+    // Returns an array of progress values (0 to 1) for each subdivision dial
+    function getDialValues(
+        currentPulse: Pulse | null,
+        subDivisions: number,
+    ): number[] {
+        // Use currentPulse.subdivs for dial count if available, else fallback to UI subDivisions
+        const dialCount = currentPulse?.subdivs ?? subDivisions;
+        if (dialCount < 1) return [];
+        const values: number[] = [];
+        if (!currentPulse) {
+            // Show all dials as empty until first pulse
+            for (let i = 0; i < dialCount; i++) values.push(0);
+            return values;
+        }
+        // measureProgress: 0..1 for the whole measure
+        // Find which dial is active
+        const totalProgress = measureProgress * dialCount;
+        const activeDialIndex = Math.floor(totalProgress);
+        const progressWithinSubdivision = totalProgress - activeDialIndex;
+        for (let i = 0; i < dialCount; i++) {
+            if (i < activeDialIndex) {
+                values.push(1);
+            } else if (i === activeDialIndex) {
+                values.push(progressWithinSubdivision);
+            } else {
+                values.push(0);
+            }
+        }
+        return values;
+    }
 
     // UI state
     let bpm = 60;
@@ -201,16 +239,20 @@
         currentPulse = null;
 
         function lightUpPulse(idx: number, colorClass: string) {
+            // Defensive: only update if idx is in bounds
+            if (!pulseSquares[idx]) return;
             pulseSquares[idx].colorClass = colorClass;
             pulseSquares[idx].lit = true;
             pulseSquares[idx].fading = false;
             pulseSquares = [...pulseSquares]; // trigger reactivity
 
             setTimeout(() => {
+                if (!pulseSquares[idx]) return;
                 pulseSquares[idx].lit = false;
                 pulseSquares[idx].fading = true;
                 pulseSquares = [...pulseSquares];
                 setTimeout(() => {
+                    if (!pulseSquares[idx]) return;
                     pulseSquares[idx].colorClass = "";
                     pulseSquares[idx].fading = false;
                     pulseSquares = [...pulseSquares];
@@ -223,14 +265,25 @@
             pulses = [...pulses, p];
             let colorClass = "white";
             if (p.pulse === 1 && p.beat === 1) colorClass = "green";
-            else if (p.isNewBeat) colorClass = "blue";
+            else if (p.isDownBeat) colorClass = "blue";
             lightUpPulse(p.pulse - 1, colorClass);
+
+            // --- True measure-based dial progress timing ---
+            // Duration of a measure in ms: beats per measure * ms per beat
+            measureDuration = (60000 / bpm) * upper;
+            // Recalculate measureStartTime so that measureProgress is always in sync
+            // If currentPulse.complete is 0.5, measure started half a measure ago
+            measureStartTime =
+                performance.now() -
+                (currentPulse?.complete ?? 0) * measureDuration;
+            // Snap measureProgress to currentPulse.complete at pulse event
+            measureProgress = currentPulse?.complete ?? 0;
 
             // Play audio for pulse
             if (audioOn) {
                 playPulseSound({
                     isNewMeasure: p.pulse === 1 && p.beat === 1,
-                    isNewBeat: p.isNewBeat && !(p.pulse === 1 && p.beat === 1),
+                    isDownBeat: p.isDownBeat,
                 });
             }
         });
@@ -324,12 +377,38 @@
         window.addEventListener("keydown", unlock);
 
         createMetronome();
+
+        // Animation loop for true measure-based dial progress
+        function animateProgress() {
+            if (!running || !currentPulse) return;
+            const now = performance.now();
+            if (measureDuration > 0) {
+                // Use pulse index as "current" instead of "previous" for base progress
+                // This fixes the lag by a segment
+                const base = currentPulse.pulse / currentPulse.pulses;
+                // Interpolate between previous and current pulse's complete value
+                // but anchor to the "current" pulse position
+                measureProgress = Math.min(
+                    1,
+                    Math.max(
+                        0,
+                        (now - measureStartTime) / measureDuration,
+                        base,
+                    ),
+                );
+            } else {
+                measureProgress = currentPulse.complete;
+            }
+            animationFrameId = requestAnimationFrame(animateProgress);
+        }
     });
 
     onDestroy(() => {
         metronome?.dispose();
     });
 </script>
+
+<LaunchAudioDialog />
 
 <div class="page-center dark">
     <h1>Metronome</h1>
@@ -398,9 +477,12 @@
                     bind:value={subDivisions}
                     on:change={updateMetronome}
                 >
-                    <option value={quarter}>Quarter</option>
-                    <option value={quaver}>Quaver</option>
-                    <option value={semiquaver}>Semiquaver</option>
+                    <option value={quarter}>Quarter ({quarter})</option>
+                    <option value={quaver}>Quaver ({quaver})</option>
+                    <option value={semiquaver}>Semiquaver ({semiquaver})</option
+                    >
+                    <option value={8}>Thirty-second (8)</option>
+                    <option value={16}>Sixty-fourth (16)</option>
                 </select>
             </div>
         </div>
@@ -430,6 +512,27 @@
                     on:change={updateMetronome}
                 />
             </div>
+        </div>
+        <div class="pulse-row">
+            {#each pulseSquares as sq, i}
+                <div
+                    class="pulse-square {sq.colorClass} {sq.lit
+                        ? 'lit'
+                        : ''} {sq.fading ? 'fading' : ''}"
+                    title="Pulse {sq.pulse}"
+                >
+                    {sq.pulse}
+                </div>
+            {/each}
+        </div>
+        <!-- New horizontal row: DialProgress controls for each subdivision -->
+        <div
+            class="dial-row"
+            style="display: flex; justify-content: center; gap: 1.5em; margin-bottom: 1.2em;"
+        >
+            {#each getDialValues(currentPulse, subDivisions) as value, i (i)}
+                <DialProgress min={0} max={1} currentValue={value} size={48} />
+            {/each}
         </div>
         <div class="button-row">
             <div class="button-group">
@@ -461,7 +564,7 @@
     </div>
 
     {#if currentPulse}
-        <div class="pulse-info" transition:fade={{ duration: 1000 }}>
+        <div class="pulse-info">
             <div>
                 <strong>Measure:</strong>
                 <span class="fixed-num">{currentPulse?.measure}</span>
@@ -475,9 +578,9 @@
                 <strong>Subdivs:</strong>
                 <span class="fixed-num">{currentPulse?.subdivs}</span>
                 &nbsp;|&nbsp;
-                <strong>isNewBeat:</strong>
+                <strong>isDownBeat:</strong>
                 <span class="fixed-yesno"
-                    >{currentPulse?.isNewBeat ? "Yes" : "No"}</span
+                    >{currentPulse?.isDownBeat ? "Yes" : "No"}</span
                 >
             </div>
         </div>
@@ -500,7 +603,6 @@
         justify-content: flex-start;
         width: 100vw;
         max-width: 100vw;
-        padding: 2.5rem 0 2rem 0;
         box-sizing: border-box;
         overflow-x: hidden;
     }
@@ -520,15 +622,21 @@
         box-sizing: border-box;
         overflow-x: auto;
     }
-    .footer {
-        width: 100vw;
+    .info-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 3.5rem; /* Adjust if your footer is taller/shorter */
+        z-index: 100;
+        background: #23283a;
         color: #8ca0b3;
         text-align: center;
-        padding: 1rem 0 0.5rem 0;
+        padding: 0.75rem 1rem;
         font-size: 1rem;
-        margin-top: auto;
-        flex-shrink: 0;
-        box-sizing: border-box;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 -2px 12px #000a;
+        pointer-events: none;
+        transition: opacity 0.2s;
     }
     .row {
         display: flex;
@@ -654,6 +762,40 @@
         background: #fff;
         color: #181c24;
     }
+
+    /* Style for dropdowns and text/numeric inputs */
+    input[type="number"],
+    input[type="text"],
+    select {
+        background: #23283a;
+        color: #e6eaf3;
+        border: 1px solid red;
+        border-radius: 6px;
+        padding: 0.35em 0.7em;
+        transition:
+            background 0.2s,
+            color 0.2s,
+            border 0.2s;
+    }
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+        background: #181c24;
+        color: #fff;
+        border-color: #4075a6;
+    }
+    /* Style for labels to contrast with input backgrounds */
+    .control-group label,
+    .checkbox-label {
+        color: #e6eaf3;
+        background: #23283a;
+        padding: 0.1em 0.4em;
+        border-radius: 4px;
+        font-weight: 500;
+        margin-bottom: 0.2em;
+        display: inline-block;
+    }
+
     .pulse-row {
         display: flex;
         gap: 0.5rem;

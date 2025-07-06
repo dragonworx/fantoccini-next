@@ -107,7 +107,7 @@ export class Metronome {
       complete: (this._pulse - 1) / settings.pulsesPerMeasure,
       measure: this._measure,
       beat: this._beat,
-      isNewBeat: (this._pulse - 1) % subdivisionsInCurrentBeat === 0,
+      isDownBeat: (this._pulse - 1) % subdivisionsInCurrentBeat === 0,
     });
 
     this.timer.emitPulse(pulseObj);

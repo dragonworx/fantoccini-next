@@ -63,7 +63,7 @@ describe("Pulse", () => {
       complete: 0.125,
       measure: 1,
       beat: 1,
-      isNewBeat: false,
+      isDownBeat: false,
     });
     expect(pulse.pulse).toBe(2);
     expect(pulse.pulses).toBe(8);
@@ -71,7 +71,7 @@ describe("Pulse", () => {
     expect(pulse.complete).toBe(0.125);
     expect(pulse.measure).toBe(1);
     expect(pulse.beat).toBe(1);
-    expect(pulse.isNewBeat).toBe(false);
+    expect(pulse.isDownBeat).toBe(false);
   });
 });
 
@@ -95,7 +95,7 @@ describe("MetronomeScheduler", () => {
       complete: 0,
       measure: 1,
       beat: 1,
-      isNewBeat: true,
+      isDownBeat: true,
     });
 
     scheduler.onPulse((p) => pulses.push(p));
@@ -121,7 +121,7 @@ describe("MetronomeScheduler", () => {
       complete: 0,
       measure: 1,
       beat: 1,
-      isNewBeat: true,
+      isDownBeat: true,
     });
 
     scheduler.onPulse((p) => {

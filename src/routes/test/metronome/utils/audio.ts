@@ -14,10 +14,10 @@ function getAudioContext(): AudioContext {
 
 export function playPulseSound({
   isNewMeasure = false,
-  isNewBeat = false,
+  isDownBeat = false,
 }: {
   isNewMeasure?: boolean;
-  isNewBeat?: boolean;
+  isDownBeat?: boolean;
 } = {}) {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
@@ -33,8 +33,8 @@ export function playPulseSound({
   if (isNewMeasure) {
     frequency = 1760; // A6, higher pitch for new measure
     duration = 0.12;
-  } else if (isNewBeat) {
-    frequency = 1320; // E6, mid pitch for new beat
+  } else if (isDownBeat) {
+    frequency = 1320; // E6, mid pitch for downbeat
     duration = 0.08;
   }
 

@@ -11,8 +11,8 @@ export class Pulse {
   readonly measure: number;
   /** Current beat within the measure */
   readonly beat: number;
-  /** Indicates if this pulse is the first pulse of a new beat */
-  readonly isNewBeat: boolean;
+  /** Indicates if this pulse is the downbeat (first pulse of a beat) */
+  readonly isDownBeat: boolean;
 
   constructor(params: {
     pulse: number;
@@ -21,7 +21,7 @@ export class Pulse {
     complete: number;
     measure: number;
     beat: number;
-    isNewBeat: boolean;
+    isDownBeat: boolean;
   }) {
     this.pulse = params.pulse;
     this.pulses = params.pulses;
@@ -29,6 +29,6 @@ export class Pulse {
     this.complete = params.complete;
     this.measure = params.measure;
     this.beat = params.beat;
-    this.isNewBeat = params.isNewBeat;
+    this.isDownBeat = params.isDownBeat;
   }
 }
