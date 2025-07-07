@@ -694,10 +694,8 @@
                 currentValue={dial.value}
                 size={48}
                 color={dial.value >= 1
-                    ? dial.isDownBeat
-                        ? "#4f8cff"
-                        : "#fff"
-                    : "#1ed760"}
+                    ? "#1ed760"
+                    : "#fff"}
             />
         {/each}
     </div>
