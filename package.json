@@ -8,7 +8,8 @@
     "test": "vitest",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "bump": "bunx bumpp"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",
