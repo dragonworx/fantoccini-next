@@ -3,8 +3,14 @@
 const PULSE_VOLUME = 0.1; // 50% of previous value (was 0.2)
 
 let audioCtx: AudioContext | null = null;
+let audioInitialized = false;
 
-function getAudioContext(): AudioContext {
+// Check if we're in a browser environment
+const isBrowser = typeof window !== "undefined";
+
+function getAudioContext(): AudioContext | null {
+  if (!isBrowser || !audioInitialized) return null;
+
   if (!audioCtx) {
     audioCtx = new (window.AudioContext ||
       (window as any).webkitAudioContext)();
@@ -19,7 +25,11 @@ export function playPulseSound({
   isNewMeasure?: boolean;
   isDownBeat?: boolean;
 } = {}) {
+  if (!isBrowser || !audioInitialized) return;
+
   const ctx = getAudioContext();
+  if (!ctx) return;
+
   const now = ctx.currentTime;
 
   // Oscillator for the pulse
@@ -58,10 +68,16 @@ export function playPulseSound({
   };
 }
 
-// Optionally, a function to unlock audio context on user gesture
+// Initialize and unlock audio context on user gesture
 export function unlockAudioContext() {
+  if (!isBrowser) return;
+
+  // Mark as initialized first so getAudioContext will create the context
+  audioInitialized = true;
+
   const ctx = getAudioContext();
-  if (ctx.state === "suspended") {
+  if (ctx && ctx.state === "suspended") {
     ctx.resume();
   }
+  return ctx !== null;
 }

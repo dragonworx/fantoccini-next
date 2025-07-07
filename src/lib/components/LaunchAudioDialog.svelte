@@ -34,6 +34,7 @@
             To start the metronome, please launch the audio context.<br />
             This is required by your browser for sound playback.
         </p>
+        <!-- svelte-ignore a11y-autofocus -->
         <button
             type="button"
             class="launch-btn"
