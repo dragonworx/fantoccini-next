@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "bump": "bunx bumpp"
+    "bump": "bunx bumpp",
+    "browser-tools-mcp": "bunx @agentdeskai/browser-tools-mcp@latest",
+    "browser-tools-server": "bunx @agentdeskai/browser-tools-server@latest"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",

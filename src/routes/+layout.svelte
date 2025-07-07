@@ -11,6 +11,10 @@
         <nav>
             <a href="/test/metronome">Test / Metronome</a>
         </nav>
+
+        <nav>
+            <a href="/test/sprite">Test / Sprite</a>
+        </nav>
     </header>
 
     <main>
