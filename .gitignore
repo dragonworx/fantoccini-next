@@ -8,6 +8,7 @@ build/
 .svelte-kit/
 .svelte/
 .claude
+doc-gen/
 
 # Logs
 npm-debug.log*

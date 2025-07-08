@@ -1,8 +1,66 @@
+/**
+ * @namespace core
+ */
+
+/**
+ * Represents different fill styles that can be applied to a Sprite.
+ * @typedef {Object} FillStyle
+ * @memberof core
+ * @property {"color"|"gradient"|"image"} type - The type of fill style
+ * @property {string} value - The value for the fill style (color string, gradient definition, or image URL)
+ *
+ * @example
+ * // Color fill
+ * const colorFill: FillStyle = { type: "color", value: "#ff0000" };
+ *
+ * @example
+ * // Gradient fill
+ * const gradientFill: FillStyle = { type: "gradient", value: "linear-gradient(to right, #ff0000, #0000ff)" };
+ *
+ * @example
+ * // Image fill
+ * const imageFill: FillStyle = { type: "image", value: "path/to/image.png" };
+ *
+ * @see core.Sprite#fill
+ */
 export type FillStyle =
   | { type: "color"; value: string }
   | { type: "gradient"; value: string }
   | { type: "image"; value: string };
 
+/**
+ * Configuration options for creating a Sprite.
+ * @interface SpriteOptions
+ * @memberof core
+ *
+ * @property {number} [x=0] - X position in pixels
+ * @property {number} [y=0] - Y position in pixels
+ * @property {number} [z=0] - Z position for 3D transforms and stacking order
+ * @property {number} [width=100] - Width in pixels
+ * @property {number} [height=100] - Height in pixels
+ * @property {number|string} [originX="50%"] - X origin for transformations (number or percentage string)
+ * @property {number|string} [originY="50%"] - Y origin for transformations (number or percentage string)
+ * @property {number} [rotation=0] - 2D rotation in degrees
+ * @property {number} [rotationX=0] - 3D rotation around X-axis in degrees
+ * @property {number} [rotationY=0] - 3D rotation around Y-axis in degrees
+ * @property {number} [rotationZ=0] - 3D rotation around Z-axis in degrees
+ * @property {number} [scaleX=1] - Scale factor along the X-axis
+ * @property {number} [scaleY=1] - Scale factor along the Y-axis
+ * @property {number} [skewX=0] - Skew along the X-axis in degrees
+ * @property {number} [skewY=0] - Skew along the Y-axis in degrees
+ * @property {string} [border=""] - CSS border property value
+ * @property {FillStyle} [fill={ type: "color", value: "#fff" }] - Fill style for the sprite
+ *
+ * @example
+ * const options: SpriteOptions = {
+ *   x: 100,
+ *   y: 200,
+ *   width: 300,
+ *   height: 200,
+ *   fill: { type: "color", value: "#ff0000" }
+ * };
+ * const sprite = new Sprite(options);
+ */
 export interface SpriteOptions {
   x?: number;
   y?: number;
@@ -21,10 +79,70 @@ export interface SpriteOptions {
   skewY?: number;
   border?: string;
   fill?: FillStyle;
+  id?: number;
+  parent?: Sprite | null;
+  children?: Sprite[];
+  selected?: boolean;
 }
 
+/**
+ * A 2D/3D visual element that can be positioned, scaled, rotated and styled.
+ * Sprites are the fundamental building blocks for creating visual compositions.
+ *
+ * @class Sprite
+ * @memberof core
+ *
+ * @example
+ * // Create a simple red rectangle
+ * const redBox = new Sprite({
+ *   x: 100,
+ *   y: 100,
+ *   width: 200,
+ *   height: 150,
+ *   fill: { type: "color", value: "#ff0000" }
+ * });
+ *
+ * // Add it to the DOM
+ * redBox.appendTo(document.body);
+ *
+ * // Animate it
+ * redBox.rotation = 45;
+ * redBox.updateStyle();
+ *
+ * @see core.SpriteOptions
+ */
 export class Sprite {
+  /**
+   * The DOM element representing this sprite.
+   * This is created during construction and can be appended to any container.
+   * @readonly
+   * @type {HTMLDivElement}
+   */
   readonly el: HTMLDivElement;
+
+  /**
+   * Unique identifier for this sprite
+   * @type {number}
+   */
+  id: number;
+
+  /**
+   * Parent sprite that contains this sprite
+   * @type {Sprite | null}
+   */
+  parent: Sprite | null = null;
+
+  /**
+   * Child sprites contained by this sprite
+   * @type {Sprite[]}
+   */
+  children: Sprite[] = [];
+
+  /**
+   * Whether this sprite is currently selected in the editor
+   * @type {boolean}
+   */
+  selected: boolean = false;
 
   private _x = 0;
   private _y = 0;
@@ -50,6 +168,21 @@ export class Sprite {
     this.el.style.position = "absolute";
     this.el.style.willChange = "transform, background, border";
     this.el.style.pointerEvents = "auto";
+
+    // Generate a random ID if not provided
+    this.id =
+      options.id !== undefined ? options.id : Math.floor(Math.random() * 10000);
+
+    // Set parent if provided
+    this.parent = options.parent || null;
+
+    // Set children if provided
+    this.children = options.children || [];
+
+    // Set selected state if provided
+    this.selected = options.selected || false;
+
+    // Set other properties
     Object.assign(this, options);
     this._dirty = true;
   }
@@ -198,6 +331,17 @@ export class Sprite {
     this._dirty = v;
   }
 
+  /**
+   * Updates the DOM element's style properties based on the current sprite properties.
+   * Call this method after changing any properties to see the visual changes.
+   *
+   * @example
+   * sprite.x = 200;
+   * sprite.rotation = 45;
+   * sprite.updateStyle(); // Apply the changes to the DOM
+   *
+   * @returns {void}
+   */
   updateStyle() {
     if (!this._dirty) return;
     const {
@@ -261,6 +405,13 @@ export class Sprite {
 
   /**
    * Appends this sprite's element to a parent DOM node.
+   *
+   * @param {HTMLElement} parent - The parent DOM element to append this sprite to
+   * @returns {void}
+   *
+   * @example
+   * const sprite = new Sprite();
+   * sprite.appendTo(document.getElementById('container'));
    */
   appendTo(parent: HTMLElement) {
     parent.appendChild(this.el);
@@ -268,6 +419,15 @@ export class Sprite {
 
   /**
    * Removes this sprite's element from its parent DOM node.
+   * Use this method to remove the sprite from the DOM.
+   *
+   * @returns {void}
+   *
+   * @example
+   * const sprite = new Sprite();
+   * sprite.appendTo(document.body);
+   * // Later, when no longer needed:
+   * sprite.remove();
    */
   remove() {
     if (this.el.parentNode) {

@@ -1,0 +1,19 @@
+{
+  "source": {
+    "include": ["./src/lib/core/", "./src/lib/metronome/"],
+    "includePattern": "\\.(js|ts|tsx)$",
+    "exclude": ["node_modules/", "dist/", "build/"]
+  },
+  "opts": {
+    "destination": "./doc-gen/",
+    "template": "node_modules/better-docs",
+    "recurse": true
+  },
+  "plugins": ["node_modules/better-docs/typescript"],
+  "tags": {
+    "allowUnknownTags": ["optional"]
+  },
+  "typescript": {
+    "moduleRoot": "./src/"
+  }
+}

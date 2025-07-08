@@ -1,28 +1,102 @@
 import { Pulse } from "./pulse";
 
+/**
+ * A callback function that's executed on each metronome pulse.
+ * @callback PulseCallback
+ * @returns {void}
+ */
 type PulseCallback = () => void;
 
+/**
+ * Configuration options for the MetronomeScheduler.
+ * @interface MetronomeSchedulerOptions
+ * @memberof metronome
+ *
+ * @property {number} [tempoBeat] - Duration of a beat in milliseconds
+ * @property {number[]} [rhythmPattern] - Array of beat multipliers (e.g., [1, 0.5, 1.5] for swing)
+ * @property {boolean} [autoStart] - Whether to start the scheduler immediately upon creation
+ *
+ * @example
+ * // Create a scheduler with swing rhythm
+ * const options = {
+ *   tempoBeat: 500, // 500ms (120 BPM)
+ *   rhythmPattern: [1.5, 0.5], // Swing rhythm
+ *   autoStart: true
+ * };
+ */
 export interface MetronomeSchedulerOptions {
-  tempoBeat?: number; // Duration of a beat in ms
-  rhythmPattern?: number[]; // Array of beat multipliers (e.g., [1, 0.5, 1.5] for swing)
+  tempoBeat?: number;
+  rhythmPattern?: number[];
   autoStart?: boolean;
 }
 
+/**
+ * A high-precision timing system that manages metronome pulses.
+ *
+ * MetronomeScheduler handles the scheduling and timing of metronome pulses,
+ * with support for tempo changes, rhythmic patterns (like swing), and
+ * pause/resume functionality.
+ *
+ * @class MetronomeScheduler
+ * @memberof metronome
+ *
+ * @example
+ * // Create a basic scheduler
+ * const scheduler = new MetronomeScheduler();
+ *
+ * // Start at 120 BPM (500ms per beat)
+ * scheduler.start(500, () => console.log('Pulse!'));
+ *
+ * // Later, pause and resume
+ * scheduler.pause();
+ * setTimeout(() => scheduler.resume(), 2000);
+ */
 export class MetronomeScheduler {
+  /** Listeners for pulse events */
   private _pulseController: ((pulse: Pulse) => void)[] = [];
-  private _timer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Active timer reference */
+  private _timer: number | null = null;
+
+  /** Whether the scheduler is currently running */
   private _running: boolean = false;
+
+  /** Expected timestamp for the next pulse */
   private _expectedNextSysMs: number = 0;
+
+  /** Current tempo in milliseconds per beat */
   private _tempoBeat: number;
+
+  /** Optional pattern for rhythmic variations like swing */
   private _rhythmPattern: number[] | null;
+
+  /** Current position in the rhythm pattern */
   private _patternIndex: number = 0;
+
+  /** Remaining time when paused */
   private _remainingInterval: number | null = null;
+
+  /** Timestamp when paused */
   private _lastPauseTime: number | null = null;
+
+  /** Flag for first pulse after resuming */
   private _resumeNextIsFirst: boolean = false;
 
   /**
-   * Create a new MetronomeScheduler.
-   * @param options Optional settings for tempo, rhythm, and autostart
+   * Creates a new MetronomeScheduler instance.
+   *
+   * @param {MetronomeSchedulerOptions} [options={}] - Configuration options
+   * @param {number} [options.tempoBeat=600] - Duration of a beat in milliseconds (default is 600ms or 100 BPM)
+   * @param {number[]} [options.rhythmPattern] - Array of beat multipliers for creating rhythmic patterns
+   * @param {boolean} [options.autoStart] - Whether to start the scheduler immediately
+   *
+   * @example
+   * // Create a metronome scheduler with swing feel at 120 BPM
+   * const scheduler = new MetronomeScheduler({
+   *   tempoBeat: 500,
+   *   rhythmPattern: [1.5, 0.5],  // Long-short swing pattern
+   *   autoStart: true
+   * });
    */
   constructor(options: MetronomeSchedulerOptions = {}) {
     this._tempoBeat = options.tempoBeat ?? 600;
@@ -33,9 +107,23 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Subscribe to pulse events.
-   * @param listener
-   * @returns unsubscribe function
+   * Registers a listener for metronome pulse events.
+   *
+   * @param {function} listener - Function that receives Pulse objects
+   * @returns {function} A function that when called, unsubscribes the listener
+   *
+   * @example
+   * const unsubscribe = scheduler.onPulse(pulse => {
+   *   console.log(`Beat ${pulse.beat} of measure ${pulse.measure}`);
+   *   if (pulse.isDownBeat) {
+   *     playSound('click.mp3');
+   *   }
+   * });
+   *
+   * // Later, to unsubscribe:
+   * unsubscribe();
+   *
+   * @see metronome.Pulse
    */
   onPulse(listener: (pulse: Pulse) => void): () => void {
     this._pulseController.push(listener);
@@ -46,9 +134,22 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Start the metronome scheduler.
-   * @param tempoBeat Duration of a beat in ms (optional, overrides constructor)
-   * @param onPulseCallback Callback to trigger on each pulse
+   * Starts the metronome scheduler and begins emitting pulses.
+   *
+   * @param {number} [tempoBeat] - Duration of a beat in milliseconds (overrides constructor setting)
+   * @param {PulseCallback} [onPulseCallback] - Callback function to execute on each pulse
+   * @returns {void}
+   *
+   * @example
+   * // Start at 120 BPM (500ms per beat)
+   * scheduler.start(500, () => {
+   *   // This executes on every pulse
+   *   playClick();
+   * });
+   *
+   * @see pause
+   * @see resume
+   * @see stop
    */
   start(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
     if (tempoBeat !== undefined) this._tempoBeat = tempoBeat;
@@ -59,7 +160,17 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Stop the metronome timer.
+   * Stops the metronome scheduler completely.
+   * Unlike pause, this resets the internal state.
+   *
+   * @returns {void}
+   *
+   * @example
+   * // Stop the metronome completely
+   * scheduler.stop();
+   *
+   * @see start
+   * @see pause
    */
   stop(): void {
     this._running = false;
@@ -70,7 +181,20 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Pause the metronome timer.
+   * Pauses the metronome scheduler temporarily.
+   * The metronome can be resumed later from the same position.
+   *
+   * @returns {void}
+   *
+   * @example
+   * // Pause temporarily
+   * scheduler.pause();
+   *
+   * // Later resume from the same position
+   * scheduler.resume();
+   *
+   * @see resume
+   * @see stop
    */
   pause(): void {
     this._running = false;
@@ -87,9 +211,24 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Resume the metronome scheduler.
-   * @param tempoBeat
-   * @param onPulseCallback
+   * Resumes the metronome scheduler from a paused state.
+   * Continues timing from where it was paused, maintaining beat integrity.
+   *
+   * @param {number} [tempoBeat] - Optional new tempo in milliseconds per beat
+   * @param {PulseCallback} [onPulseCallback] - Callback function to execute on each pulse
+   * @returns {void}
+   *
+   * @example
+   * // Pause the metronome
+   * scheduler.pause();
+   *
+   * // Later, resume with the same tempo
+   * scheduler.resume();
+   *
+   * // Or resume with a new tempo
+   * scheduler.resume(400); // 150 BPM
+   *
+   * @see pause
    */
   resume(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
     if (this._running) return; // Prevent multiple timers
@@ -126,7 +265,9 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Reset the timer state.
+   * Resets the internal timer state.
+   *
+   * @returns {void}
    */
   private _resetTimer(): void {
     this._expectedNextSysMs = 0;
@@ -137,9 +278,13 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Schedule the next pulse.
-   * @param tempoBeat
-   * @param onPulseCallback
+   * Schedules the next pulse with high-precision timing.
+   * Uses adaptive scheduling to maintain accurate timing even with system jitter.
+   *
+   * @param {number} tempoBeat - Duration of a beat in milliseconds
+   * @param {PulseCallback} onPulseCallback - Function to call on each pulse
+   * @param {boolean} [isResume=false] - Whether this is the first pulse after resuming
+   * @returns {void}
    */
   private _schedulePulse(
     tempoBeat: number,
@@ -185,8 +330,16 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Emit a pulse to all listeners.
-   * @param pulse
+   * Emits a pulse event to all registered listeners.
+   *
+   * @param {Pulse} pulse - The pulse object containing timing information
+   * @returns {void}
+   *
+   * @example
+   * const pulse = new Pulse({...});
+   * scheduler.emitPulse(pulse);
+   *
+   * @see onPulse
    */
   emitPulse(pulse: Pulse): void {
     for (const listener of this._pulseController) {
@@ -195,8 +348,20 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Set a new rhythm pattern.
-   * @param pattern Array of multipliers for each beat (e.g., [1, 0.5, 1.5])
+   * Sets a new rhythm pattern for creating rhythmic variations.
+   *
+   * @param {number[]} pattern - Array of beat duration multipliers
+   * @returns {void}
+   *
+   * @example
+   * // Set a swing rhythm (long-short pattern)
+   * scheduler.setRhythmPattern([1.5, 0.5]);
+   *
+   * // Set a "shuffle" feel
+   * scheduler.setRhythmPattern([1.33, 0.67]);
+   *
+   * // Set an even rhythm (removes any pattern)
+   * scheduler.setRhythmPattern([1]);
    */
   setRhythmPattern(pattern: number[]): void {
     this._rhythmPattern = pattern;
@@ -204,15 +369,31 @@ export class MetronomeScheduler {
   }
 
   /**
-   * Set a new tempo (ms per beat).
-   * @param tempoBeat
+   * Sets a new tempo in milliseconds per beat.
+   *
+   * @param {number} tempoBeat - Beat duration in milliseconds
+   * @returns {void}
+   *
+   * @example
+   * // Set to 120 BPM (500ms per beat)
+   * scheduler.setTempo(500);
+   *
+   * // Set to 90 BPM (667ms per beat)
+   * scheduler.setTempo(667);
    */
   setTempo(tempoBeat: number): void {
     this._tempoBeat = tempoBeat;
   }
 
   /**
-   * Dispose the metronome scheduler.
+   * Disposes the metronome scheduler and releases all resources.
+   * Call this method when the scheduler is no longer needed to prevent memory leaks.
+   *
+   * @returns {void}
+   *
+   * @example
+   * // Clean up when the scheduler is no longer needed
+   * scheduler.dispose();
    */
   dispose(): void {
     this.stop();

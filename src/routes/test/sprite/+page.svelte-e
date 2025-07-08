@@ -190,12 +190,11 @@
     // Reactive properties object
     let properties: Record<string, any> = {};
 
-    // Fill style options
+    // Fill style controls
     let fillType: "color" | "gradient" | "image" = "color";
     let fillColor = "#4f8cff";
-    let fillGradient = "linear-gradient(45deg, #4f8cff, #00ff99)";
-    let fillImage = "https://placekitten.com/200/200";
-    let fillStyle: FillStyle;
+    let fillGradient = "linear-gradient(45deg, #4f8cff, #1ed760)";
+    let fillImage = "https://picsum.photos/200/200";
 
     // Initialize properties with defaults
     function initializeProperties() {
@@ -205,17 +204,19 @@
         });
     }
 
-    // Reactive fill style based on type
-    $: fillStyle =
-        fillType === "color"
-            ? ({ type: "color", value: fillColor } as FillStyle)
-            : fillType === "gradient"
-              ? ({ type: "gradient", value: fillGradient } as FillStyle)
-              : ({ type: "image", value: fillImage } as FillStyle);
-
-    // Animation control
-    let isAnimating = false;
-    let animationFrame: number | null = null;
+    // Reactive fill style
+    $: fillStyle = (() => {
+        switch (fillType) {
+            case "color":
+                return { type: "color" as const, value: fillColor };
+            case "gradient":
+                return { type: "gradient" as const, value: fillGradient };
+            case "image":
+                return { type: "image" as const, value: fillImage };
+            default:
+                return { type: "color" as const, value: "#4f8cff" };
+        }
+    })();
 
     // Update selected sprite when properties change
     $: if (selectedSprite && browser) {
@@ -233,7 +234,10 @@
         selectedSprite.updateStyle();
     }
 
-    // Animation functions
+    // Animation controls
+    let isAnimating = false;
+    let animationFrame: number | null = null;
+
     function startAnimation() {
         if (!selectedSprite || isAnimating) return;
         isAnimating = true;
@@ -271,7 +275,7 @@
 
     function stopAnimation() {
         isAnimating = false;
-        if (animationFrame !== null) {
+        if (animationFrame) {
             cancelAnimationFrame(animationFrame);
             animationFrame = null;
         }
@@ -283,6 +287,7 @@
                     (selectedSprite as any)[prop.key] = properties[prop.key];
                 }
             });
+            selectedSprite.fill = fillStyle;
             selectedSprite.updateStyle();
         }
     }
@@ -303,14 +308,16 @@
             initializeProperties();
             fillType = "color";
             fillColor = "#4f8cff";
+            fillGradient = "linear-gradient(45deg, #4f8cff, #1ed760)";
+            fillImage = "https://picsum.photos/200/200";
         }
     }
 
-    // Sprite creation
-    function createSprite(parent?: ExtendedSprite): ExtendedSprite {
+    // Sprite management functions
+    function createSprite(parentSprite?: ExtendedSprite): ExtendedSprite {
         const newSprite = new Sprite({
-            x: 150,
-            y: 150,
+            x: 10,
+            y: 10,
             z: 0,
             width: 100,
             height: 100,
@@ -328,20 +335,19 @@
             selectSprite(newSprite);
         });
 
-        if (parent) {
-            newSprite.parent = parent;
-            parent.children?.push(newSprite);
+        if (parentSprite) {
+            newSprite.parent = parentSprite;
+            parentSprite.children?.push(newSprite);
+            newSprite.appendTo(parentSprite.el);
+        } else {
+            newSprite.appendTo(spriteContainer);
         }
 
-        // Add to sprites array and DOM
         sprites.push(newSprite);
         newSprite.updateStyle();
-        spriteContainer.appendChild(newSprite.el);
-
         return newSprite;
     }
 
-    // Select a sprite
     function selectSprite(sprite: ExtendedSprite) {
         // Deselect current sprite
         if (selectedSprite) {
@@ -360,11 +366,11 @@
 
     function updateSpriteSelection(sprite: ExtendedSprite) {
         if (sprite.selected) {
-            sprite.el.style.boxShadow = "0 0 0 4px rgba(79, 140, 255, 0.8)";
-            sprite.el.style.zIndex = "1000";
+            sprite.el.style.outline = "3px solid #1ed760";
+            sprite.el.style.outlineOffset = "2px";
         } else {
-            sprite.el.style.boxShadow = "none";
-            sprite.el.style.zIndex = String(Math.round(sprite.z));
+            sprite.el.style.outline = "";
+            sprite.el.style.outlineOffset = "";
         }
     }
 
@@ -399,21 +405,19 @@
         if (selectedSprite.parent) {
             const parentChildren = selectedSprite.parent.children || [];
             const index = parentChildren.indexOf(selectedSprite);
-            if (index >= 0) {
+            if (index > -1) {
                 parentChildren.splice(index, 1);
             }
         }
 
-        // Remove from DOM
-        if (selectedSprite.el.parentNode) {
-            selectedSprite.el.parentNode.removeChild(selectedSprite.el);
-        }
-
         // Remove from sprites array
         const index = sprites.indexOf(selectedSprite);
-        if (index >= 0) {
+        if (index > -1) {
             sprites.splice(index, 1);
         }
+
+        // Remove from DOM
+        selectedSprite.remove();
 
         // Select the first remaining sprite
         if (sprites.length > 0) {
@@ -444,10 +448,12 @@
 
 <div class="page-center dark">
     <h1>Sprite Demo</h1>
+
     <div class="demo-layout">
-        <!-- Controls Panel -->
+        <!-- Controls Section -->
         <div class="controls-panel">
             <div class="controls-grid">
+                <!-- Property Controls -->
                 {#each spriteProperties as prop}
                     <div class="control-group">
                         <label for={prop.key}>{prop.label}</label>
@@ -489,16 +495,13 @@
 
                 <!-- Fill Style Controls -->
                 <div class="control-group fill-controls">
-                    <label id="fill-style-label" for="color-radio"
-                        >Fill Style</label
-                    >
+                    <label id="fill-style-label">Fill Style</label>
                     <div
                         class="fill-type-selector"
                         aria-labelledby="fill-style-label"
                     >
                         <label class="radio-label">
                             <input
-                                id="color-radio"
                                 type="radio"
                                 bind:group={fillType}
                                 value="color"
@@ -601,10 +604,8 @@
                 {#if selectedSprite}
                     <div class="sprite-info">
                         <div class="property-item">
-                            <span class="property-name">ID:</span>
-                            <span class="property-value"
-                                >{selectedSprite.id}</span
-                            >
+                            <span class="property-name">Total Sprites:</span>
+                            <span class="property-value">{sprites.length}</span>
                         </div>
                         <div class="property-item">
                             <span class="property-name">Children:</span>
@@ -631,6 +632,7 @@
                         </div>
                     </div>
 
+                    <!-- Sprite Hierarchy -->
                     {#if sprites.length > 1}
                         <div class="sprite-hierarchy">
                             <h4>Sprite Hierarchy</h4>
@@ -644,7 +646,9 @@
                                         <button
                                             class="sprite-selector"
                                             on:click={() =>
-                                                selectSprite(rootSprite)}
+                                                selectSprite(
+                                                    rootSprite as ExtendedSprite,
+                                                )}
                                         >
                                             Sprite #{rootSprite.id}
                                         </button>
@@ -660,7 +664,7 @@
                                                             class="sprite-selector"
                                                             on:click={() =>
                                                                 selectSprite(
-                                                                    childSprite,
+                                                                    childSprite as ExtendedSprite,
                                                                 )}
                                                         >
                                                             └ Sprite #{childSprite.id}
@@ -687,72 +691,74 @@
 <style>
     :root {
         --primary-blue: #4f8cff;
-        --secondary-blue: #1e63e0;
-        --dark-bg: #1a1a1a;
-        --panel-bg: #2a2a2a;
-        --text-color: #ffffff;
-        --border-color: #3a3a3a;
+        --primary-green: #1ed760;
+        --dark-bg: #23283a;
+        --darker-bg: #181c24;
+        --text-light: #e3e9f3;
+        --text-muted: #8ca0b3;
+        --border-color: #3a4660;
     }
 
     .dark {
-        background-color: var(--dark-bg);
-        color: var(--text-color);
+        color: var(--text-light);
     }
 
     .page-center {
-        width: 100%;
-        min-height: 100vh;
-        padding: 20px;
-        box-sizing: border-box;
         display: flex;
         flex-direction: column;
         align-items: center;
+        width: 100vw;
+        min-height: 100vh;
+        box-sizing: border-box;
+        padding: 2rem 1rem;
     }
 
     .demo-layout {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 2rem;
         width: 100%;
-        max-width: 1200px;
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
+        max-width: 1400px;
+        height: 80vh;
     }
 
     .controls-panel {
-        flex: 0 0 300px;
-        background-color: var(--panel-bg);
-        border-radius: 10px;
-        padding: 20px;
+        background: var(--dark-bg);
+        border-radius: 18px;
+        padding: 1.5rem;
+        overflow-y: auto;
+        box-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
     }
 
     .controls-grid {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 1rem;
     }
 
     .control-group {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 0.5rem;
     }
 
     .control-group label {
-        font-size: 14px;
         font-weight: 500;
-        color: #ccc;
-        margin-bottom: 4px;
+        font-size: 0.9rem;
+        color: var(--text-light);
+        margin-bottom: 0.25rem;
     }
 
     .range-container {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 0.5rem;
     }
 
     .range-container input[type="range"] {
         flex: 1;
         height: 6px;
-        background: #444;
+        background: var(--border-color);
         border-radius: 3px;
         outline: none;
         -webkit-appearance: none;
@@ -769,66 +775,67 @@
     }
 
     .range-value {
-        min-width: 40px;
+        min-width: 3rem;
         text-align: right;
-        font-size: 14px;
         font-family: monospace;
+        font-size: 0.85rem;
+        color: var(--text-muted);
     }
 
     input[type="text"],
     input[type="color"],
     select {
-        padding: 8px 10px;
-        background: #333;
+        padding: 0.5rem;
         border: 1px solid var(--border-color);
-        border-radius: 4px;
-        color: white;
-        font-size: 14px;
+        border-radius: 6px;
+        background: var(--darker-bg);
+        color: var(--text-light);
+        font-size: 0.9rem;
     }
 
     input[type="text"]:focus,
     select:focus {
         outline: none;
         border-color: var(--primary-blue);
-        box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.3);
     }
 
     .fill-controls {
-        padding: 10px;
-        background: #333;
-        border-radius: 8px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+        margin-top: 1rem;
     }
 
     .fill-type-selector {
         display: flex;
-        gap: 15px;
-        margin-bottom: 10px;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
     }
 
     .radio-label {
         display: flex;
         align-items: center;
-        gap: 5px;
-        font-size: 14px;
+        gap: 0.25rem;
+        font-size: 0.85rem;
         cursor: pointer;
     }
 
     .button-row {
-        display: flex;
-        flex-direction: column;
-        margin-top: 15px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+        margin-top: 1rem;
     }
 
     .button-group {
         display: flex;
-        gap: 10px;
-        margin-top: 8px;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .button-row h4 {
-        margin: 0 0 8px 0;
-        font-size: 16px;
-        color: #ccc;
+        margin: 0 0 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 600;
     }
 
     .main-btn {
@@ -840,43 +847,42 @@
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 10px 15px;
-        font-weight: 600;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
         cursor: pointer;
-        flex: 1;
-        transition: all 0.2s;
+        transition: opacity 0.2s;
     }
 
     .main-btn:hover {
-        background: var(--secondary-blue);
+        opacity: 0.9;
     }
 
     .secondary-btn {
-        background: #444;
-        color: white;
+        background: var(--border-color);
+        color: var(--text-light);
         border: none;
         border-radius: 8px;
-        padding: 10px 15px;
-        font-weight: 500;
+        padding: 0.5rem 1rem;
         cursor: pointer;
+        transition: background 0.2s;
     }
 
     .secondary-btn:hover {
-        background: #555;
+        background: #4a5570;
     }
 
     .danger-btn {
-        background: #e74c3c;
+        background: #dc3545;
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 10px 15px;
-        font-weight: 600;
+        padding: 0.5rem 1rem;
         cursor: pointer;
+        transition: background 0.2s;
     }
 
     .danger-btn:hover {
-        background: #c0392b;
+        background: #c82333;
     }
 
     .danger-btn:disabled,
@@ -887,7 +893,7 @@
 
     .danger-btn:disabled:hover,
     .main-btn:disabled:hover {
-        background: #e74c3c;
+        background: #dc3545;
         opacity: 0.5;
     }
 
@@ -901,129 +907,134 @@
     }
 
     .sprite-display {
-        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 1rem;
     }
 
     .sprite-container {
-        flex: 1;
-        min-height: 400px;
-        background-color: var(--panel-bg);
-        border-radius: 10px;
         position: relative;
+        flex: 1;
+        background: var(--darker-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
         overflow: hidden;
+        min-height: 400px;
     }
 
     .property-display {
-        background-color: var(--panel-bg);
-        border-radius: 10px;
-        padding: 20px;
+        background: var(--dark-bg);
+        border-radius: 12px;
+        padding: 1rem;
         max-height: 300px;
         overflow-y: auto;
     }
 
     .property-display h3 {
-        margin-top: 0;
-        margin-bottom: 15px;
-        font-size: 18px;
+        margin: 0 0 1rem 0;
+        color: var(--text-light);
+        font-size: 1.1rem;
     }
 
     .property-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem;
     }
 
     .property-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 5px 0;
+        padding: 0.25rem 0;
         border-bottom: 1px solid var(--border-color);
     }
 
     .property-name {
-        color: #bbb;
+        font-size: 0.85rem;
+        color: var(--text-muted);
     }
 
     .property-value {
-        font-weight: 500;
         font-family: monospace;
-        background: #333;
-        padding: 2px 6px;
-        border-radius: 4px;
+        font-size: 0.85rem;
+        color: var(--text-light);
+        text-align: right;
     }
 
     .sprite-info {
-        margin-bottom: 20px;
-        padding-bottom: 10px;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
         border-bottom: 1px solid var(--border-color);
     }
 
     .sprite-hierarchy {
-        margin-top: 20px;
-        padding-top: 10px;
+        margin-top: 1rem;
+        padding-top: 1rem;
         border-top: 1px solid var(--border-color);
     }
 
     .sprite-hierarchy h4 {
-        margin: 0 0 10px 0;
-        font-size: 16px;
-        color: #ccc;
+        margin: 0 0 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 600;
     }
 
     .hierarchy-list {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 0.25rem;
     }
 
     .hierarchy-item {
-        padding: 2px 0;
+        display: flex;
+        flex-direction: column;
     }
 
     .hierarchy-item.child {
-        margin-left: 20px;
+        margin-left: 1rem;
     }
 
     .sprite-selector {
-        background: none;
-        border: none;
-        color: #ccc;
-        padding: 4px 8px;
+        background: var(--darker-bg);
+        color: var(--text-light);
+        border: 1px solid var(--border-color);
         border-radius: 4px;
+        padding: 0.25rem 0.5rem;
         cursor: pointer;
-        font-size: 14px;
         text-align: left;
-        width: 100%;
+        font-size: 0.8rem;
+        transition: all 0.2s;
     }
 
     .sprite-selector:hover {
-        background: #444;
-        color: white;
+        background: var(--border-color);
+        border-color: var(--primary-blue);
     }
 
     .hierarchy-item.selected .sprite-selector {
         background: var(--primary-blue);
+        border-color: var(--primary-blue);
         color: white;
     }
 
     .children {
-        margin-top: 5px;
-        padding-left: 10px;
-        border-left: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.25rem;
     }
 
     @media (max-width: 1000px) {
         .demo-layout {
-            flex-direction: column;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr;
+            height: auto;
         }
 
         .controls-panel {
-            flex: auto;
-            width: 100%;
+            max-height: 400px;
         }
 
         .sprite-container {
