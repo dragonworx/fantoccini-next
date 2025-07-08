@@ -232,26 +232,18 @@ export class Sprite {
     el.style.width = `${baseWidth}px`;
     el.style.height = `${baseHeight}px`;
     el.style.transformOrigin = `${_originX} ${_originY}`;
-    // Build transform in the correct order to avoid shearing
-    // Order: translate -> rotate -> scale -> skew
-    const transforms = [
-      `perspective(800px)`,
-      `translate3d(0,0,${_z}px)`,
-      `scale(${1 + _z * 0.01})`,
-      // Apply all rotations first
-      _rotation !== 0 ? `rotate(${_rotation}deg)` : '',
-      _rotationX !== 0 ? `rotateX(${_rotationX}deg)` : '',
-      _rotationY !== 0 ? `rotateY(${_rotationY}deg)` : '',
-      _rotationZ !== 0 ? `rotateZ(${_rotationZ}deg)` : '',
-      // Then apply scaling
-      (widthScale * _scaleX) !== 1 ? `scaleX(${widthScale * _scaleX})` : '',
-      (heightScale * _scaleY) !== 1 ? `scaleY(${heightScale * _scaleY})` : '',
-      // Finally apply skewing
-      _skewX !== 0 ? `skewX(${_skewX}deg)` : '',
-      _skewY !== 0 ? `skewY(${_skewY}deg)` : ''
-    ].filter(t => t !== '');
-    
-    el.style.transform = transforms.join(' ');
+    el.style.transform =
+      `perspective(800px) ` +
+      `translate3d(0,0,${_z}px) ` +
+      `scale(${1 + _z * 0.01}) ` +
+      `rotate(${_rotation}deg) ` +
+      `rotateX(${_rotationX}deg) ` +
+      `rotateY(${_rotationY}deg) ` +
+      `rotateZ(${_rotationZ}deg) ` +
+      `scaleX(${widthScale * _scaleX}) ` +
+      `scaleY(${heightScale * _scaleY}) ` +
+      `skewX(${_skewX}deg) ` +
+      `skewY(${_skewY}deg)`;
 
     el.style.zIndex = String(Math.round(_z));
     el.style.border = _border;

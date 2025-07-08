@@ -23,7 +23,7 @@
     // Returns an array of progress values (0 to 1) for each subdivision dial
     // Persistent array to track isDownBeat for each dial in the current measure
     let dialMeta: { isDownBeat: boolean }[] = [];
-    
+
     // Reactive variable to ensure dials update when measureProgress changes
     $: dialValues = (() => {
         // Include measureProgress in the reactive dependencies
@@ -693,9 +693,7 @@
                 max={1}
                 currentValue={dial.value}
                 size={48}
-                color={dial.value >= 1
-                    ? "#1ed760"
-                    : "#fff"}
+                color={dial.value >= 1 ? "#1ed760" : "#fff"}
             />
         {/each}
     </div>
@@ -868,7 +866,7 @@
         padding: 0.18rem 0.5rem;
         border-radius: 5px;
         border: 1px solid #3a4660;
-        font-size: 0.98rem;
+        font-size: 0.85rem;
         background: #2d3344;
         color: #181c24;
         transition:
