@@ -3,9 +3,19 @@
     import { browser } from "$app/environment";
     import { Sprite, type FillStyle } from "$lib/core/sprite";
 
-    // Sprite instance
-    let sprite: Sprite | null = null;
+    // Sprite management
+    let sprites: Sprite[] = [];
+    let selectedSprite: Sprite | null = null;
     let spriteContainer: HTMLDivElement;
+    let spriteIdCounter = 0;
+
+    // Add unique ID to sprites for tracking
+    interface ExtendedSprite extends Sprite {
+        id?: number;
+        parent?: ExtendedSprite;
+        children?: ExtendedSprite[];
+        selected?: boolean;
+    }
 
     // Property definitions for extensible UI generation
     interface PropertyConfig {
@@ -104,20 +114,20 @@
         }
     })();
 
-    // Update sprite when properties change
-    $: if (sprite && browser) {
+    // Update selected sprite when properties change
+    $: if (selectedSprite && browser) {
         // Update all numeric/string properties
         spriteProperties.forEach(prop => {
             if (properties[prop.key] !== undefined) {
-                (sprite as any)[prop.key] = properties[prop.key];
+                (selectedSprite as any)[prop.key] = properties[prop.key];
             }
         });
         
         // Update fill style
-        sprite.fill = fillStyle;
+        selectedSprite.fill = fillStyle;
         
         // Update the visual representation
-        sprite.updateStyle();
+        selectedSprite.updateStyle();
     }
 
     // Animation controls
@@ -125,32 +135,32 @@
     let animationFrame: number | null = null;
 
     function startAnimation() {
-        if (!sprite || isAnimating) return;
+        if (!selectedSprite || isAnimating) return;
         isAnimating = true;
         
         const startTime = performance.now();
         
         function animate(currentTime: number) {
-            if (!sprite || !isAnimating) return;
+            if (!selectedSprite || !isAnimating) return;
             
             const elapsed = currentTime - startTime;
             const progress = (elapsed / 3000) % 1; // 3 second cycle
             
             // Animate rotation
-            sprite.rotation = progress * 360;
+            selectedSprite.rotation = progress * 360;
             
             // Animate position in a circle
             const centerX = properties.x || 150;
             const centerY = properties.y || 150;
             const radius = 50;
-            sprite.x = centerX + Math.cos(progress * Math.PI * 2) * radius;
-            sprite.y = centerY + Math.sin(progress * Math.PI * 2) * radius;
+            selectedSprite.x = centerX + Math.cos(progress * Math.PI * 2) * radius;
+            selectedSprite.y = centerY + Math.sin(progress * Math.PI * 2) * radius;
             
             // Animate scale
-            sprite.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.3;
-            sprite.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.3;
+            selectedSprite.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.3;
+            selectedSprite.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.3;
             
-            sprite.updateStyle();
+            selectedSprite.updateStyle();
             animationFrame = requestAnimationFrame(animate);
         }
         
@@ -165,14 +175,14 @@
         }
         
         // Reset to current property values
-        if (sprite) {
+        if (selectedSprite) {
             spriteProperties.forEach(prop => {
                 if (properties[prop.key] !== undefined) {
-                    (sprite as any)[prop.key] = properties[prop.key];
+                    (selectedSprite as any)[prop.key] = properties[prop.key];
                 }
             });
-            sprite.fill = fillStyle;
-            sprite.updateStyle();
+            selectedSprite.fill = fillStyle;
+            selectedSprite.updateStyle();
         }
     }
 
@@ -186,11 +196,130 @@
 
     function resetProperties() {
         stopAnimation();
-        initializeProperties();
-        fillType = "color";
-        fillColor = "#4f8cff";
-        fillGradient = "linear-gradient(45deg, #4f8cff, #1ed760)";
-        fillImage = "https://picsum.photos/200/200";
+        if (selectedSprite) {
+            loadPropertiesFromSprite(selectedSprite);
+        } else {
+            initializeProperties();
+            fillType = "color";
+            fillColor = "#4f8cff";
+            fillGradient = "linear-gradient(45deg, #4f8cff, #1ed760)";
+            fillImage = "https://picsum.photos/200/200";
+        }
+    }
+
+    // Sprite management functions
+    function createSprite(parentSprite?: ExtendedSprite): ExtendedSprite {
+        const newSprite = new Sprite({
+            x: 10,
+            y: 10,
+            z: 0,
+            width: 100,
+            height: 100,
+            fill: { type: "color", value: "#4f8cff" }
+        }) as ExtendedSprite;
+
+        newSprite.id = ++spriteIdCounter;
+        newSprite.children = [];
+        newSprite.selected = false;
+        
+        // Add selection styling
+        newSprite.el.style.cursor = "pointer";
+        newSprite.el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectSprite(newSprite);
+        });
+
+        if (parentSprite) {
+            newSprite.parent = parentSprite;
+            parentSprite.children?.push(newSprite);
+            newSprite.appendTo(parentSprite.el);
+        } else {
+            newSprite.appendTo(spriteContainer);
+        }
+
+        sprites.push(newSprite);
+        newSprite.updateStyle();
+        return newSprite;
+    }
+
+    function selectSprite(sprite: ExtendedSprite) {
+        // Deselect current sprite
+        if (selectedSprite) {
+            selectedSprite.selected = false;
+            updateSpriteSelection(selectedSprite);
+        }
+
+        // Select new sprite
+        selectedSprite = sprite;
+        selectedSprite.selected = true;
+        updateSpriteSelection(selectedSprite);
+        
+        // Load sprite properties into controls
+        loadPropertiesFromSprite(selectedSprite);
+    }
+
+    function updateSpriteSelection(sprite: ExtendedSprite) {
+        if (sprite.selected) {
+            sprite.el.style.outline = "3px solid #1ed760";
+            sprite.el.style.outlineOffset = "2px";
+        } else {
+            sprite.el.style.outline = "";
+            sprite.el.style.outlineOffset = "";
+        }
+    }
+
+    function loadPropertiesFromSprite(sprite: ExtendedSprite) {
+        spriteProperties.forEach(prop => {
+            properties[prop.key] = (sprite as any)[prop.key];
+        });
+        
+        // Load fill style
+        if (sprite.fill.type === "color") {
+            fillType = "color";
+            fillColor = sprite.fill.value;
+        } else if (sprite.fill.type === "gradient") {
+            fillType = "gradient";
+            fillGradient = sprite.fill.value;
+        } else if (sprite.fill.type === "image") {
+            fillType = "image";
+            fillImage = sprite.fill.value;
+        }
+    }
+
+    function addChildSprite() {
+        if (!selectedSprite) return;
+        const newSprite = createSprite(selectedSprite);
+        selectSprite(newSprite);
+    }
+
+    function deleteSprite() {
+        if (!selectedSprite || sprites.length <= 1) return;
+        
+        // Remove from parent's children array
+        if (selectedSprite.parent) {
+            const parentChildren = selectedSprite.parent.children || [];
+            const index = parentChildren.indexOf(selectedSprite);
+            if (index > -1) {
+                parentChildren.splice(index, 1);
+            }
+        }
+
+        // Remove from sprites array
+        const index = sprites.indexOf(selectedSprite);
+        if (index > -1) {
+            sprites.splice(index, 1);
+        }
+
+        // Remove from DOM
+        selectedSprite.remove();
+
+        // Select the first remaining sprite
+        if (sprites.length > 0) {
+            selectSprite(sprites[0]);
+        } else {
+            selectedSprite = null;
+            initializeProperties();
+        }
     }
 
     onMount(() => {
@@ -198,28 +327,16 @@
         
         initializeProperties();
         
-        // Create sprite
-        sprite = new Sprite({
-            x: properties.x,
-            y: properties.y,
-            z: properties.z,
-            width: properties.width,
-            height: properties.height,
-            fill: fillStyle
-        });
-        
-        // Append to container
-        if (spriteContainer) {
-            sprite.appendTo(spriteContainer);
-            sprite.updateStyle();
-        }
+        // Create initial sprite
+        const initialSprite = createSprite();
+        selectSprite(initialSprite);
     });
 
     onDestroy(() => {
         stopAnimation();
-        if (sprite) {
-            sprite.remove();
-        }
+        sprites.forEach(sprite => sprite.remove());
+        sprites = [];
+        selectedSprite = null;
     });
 </script>
 
@@ -290,14 +407,36 @@
                     {/if}
                 </div>
 
+                <!-- Sprite Management -->
+                <div class="button-row">
+                    <h4>Sprite Management</h4>
+                    <div class="button-group">
+                        <button 
+                            class="main-btn" 
+                            on:click={addChildSprite}
+                            disabled={!selectedSprite}
+                        >
+                            Add Child
+                        </button>
+                        <button 
+                            class="danger-btn" 
+                            on:click={deleteSprite}
+                            disabled={!selectedSprite || sprites.length <= 1}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="button-row">
+                    <h4>Animation & Controls</h4>
                     <div class="button-group">
                         <button class="main-btn" on:click={toggleAnimation}>
                             {isAnimating ? "Stop Animation" : "Start Animation"}
                         </button>
                         <button class="secondary-btn" on:click={resetProperties}>
-                            Reset All
+                            Reset Properties
                         </button>
                     </div>
                 </div>
@@ -312,19 +451,77 @@
             
             <!-- Property Display -->
             <div class="property-display">
-                <h3>Current Properties</h3>
-                <div class="property-grid">
-                    {#each spriteProperties as prop}
+                <h3>
+                    {#if selectedSprite}
+                        Selected Sprite #{selectedSprite.id}
+                        {#if selectedSprite.parent}
+                            (Child of #{selectedSprite.parent.id})
+                        {/if}
+                    {:else}
+                        No Sprite Selected
+                    {/if}
+                </h3>
+                
+                {#if selectedSprite}
+                    <div class="sprite-info">
                         <div class="property-item">
-                            <span class="property-name">{prop.label}:</span>
-                            <span class="property-value">{properties[prop.key]}</span>
+                            <span class="property-name">Total Sprites:</span>
+                            <span class="property-value">{sprites.length}</span>
                         </div>
-                    {/each}
-                    <div class="property-item">
-                        <span class="property-name">Fill:</span>
-                        <span class="property-value">{fillType} - {fillStyle.value}</span>
+                        <div class="property-item">
+                            <span class="property-name">Children:</span>
+                            <span class="property-value">{selectedSprite.children?.length || 0}</span>
+                        </div>
                     </div>
-                </div>
+                    
+                    <div class="property-grid">
+                        {#each spriteProperties as prop}
+                            <div class="property-item">
+                                <span class="property-name">{prop.label}:</span>
+                                <span class="property-value">{properties[prop.key]}</span>
+                            </div>
+                        {/each}
+                        <div class="property-item">
+                            <span class="property-name">Fill:</span>
+                            <span class="property-value">{fillType} - {fillStyle.value}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sprite Hierarchy -->
+                    {#if sprites.length > 1}
+                        <div class="sprite-hierarchy">
+                            <h4>Sprite Hierarchy</h4>
+                            <div class="hierarchy-list">
+                                {#each sprites.filter(s => !s.parent) as rootSprite}
+                                    <div class="hierarchy-item" class:selected={rootSprite === selectedSprite}>
+                                        <button 
+                                            class="sprite-selector"
+                                            on:click={() => selectSprite(rootSprite)}
+                                        >
+                                            Sprite #{rootSprite.id}
+                                        </button>
+                                        {#if rootSprite.children && rootSprite.children.length > 0}
+                                            <div class="children">
+                                                {#each rootSprite.children as childSprite}
+                                                    <div class="hierarchy-item child" class:selected={childSprite === selectedSprite}>
+                                                        <button 
+                                                            class="sprite-selector"
+                                                            on:click={() => selectSprite(childSprite)}
+                                                        >
+                                                            └ Sprite #{childSprite.id}
+                                                        </button>
+                                                    </div>
+                                                {/each}
+                                            </div>
+                                        {/if}
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
+                {:else}
+                    <p>Click on a sprite to select it and view its properties.</p>
+                {/if}
             </div>
         </div>
     </div>
@@ -469,6 +666,14 @@
     .button-group {
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .button-row h4 {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 600;
     }
 
     .main-btn {
@@ -498,6 +703,37 @@
 
     .secondary-btn:hover {
         background: #4a5570;
+    }
+
+    .danger-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .danger-btn:hover {
+        background: #c82333;
+    }
+
+    .danger-btn:disabled,
+    .main-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .danger-btn:disabled:hover,
+    .main-btn:disabled:hover {
+        background: #dc3545;
+        opacity: 0.5;
+    }
+
+    .main-btn:disabled:hover {
+        background: linear-gradient(90deg, var(--primary-blue) 60%, #1a5fd0 100%);
+        opacity: 0.5;
     }
 
     .sprite-display {
@@ -554,6 +790,70 @@
         font-size: 0.85rem;
         color: var(--text-light);
         text-align: right;
+    }
+
+    .sprite-info {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .sprite-hierarchy {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .sprite-hierarchy h4 {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .hierarchy-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .hierarchy-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hierarchy-item.child {
+        margin-left: 1rem;
+    }
+
+    .sprite-selector {
+        background: var(--darker-bg);
+        color: var(--text-light);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+    }
+
+    .sprite-selector:hover {
+        background: var(--border-color);
+        border-color: var(--primary-blue);
+    }
+
+    .hierarchy-item.selected .sprite-selector {
+        background: var(--primary-blue);
+        border-color: var(--primary-blue);
+        color: white;
+    }
+
+    .children {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.25rem;
     }
 
     @media (max-width: 1000px) {
