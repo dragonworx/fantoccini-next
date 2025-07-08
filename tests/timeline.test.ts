@@ -568,9 +568,15 @@ describe("DOMTimelineObject", () => {
   });
 
   it("should apply transform styles to DOM element", () => {
-    const xProperty = domObject.getProperty<number>("x")!;
-    const yProperty = domObject.getProperty<number>("y")!;
-    const rotationProperty = domObject.getProperty<number>("rotation")!;
+    const xProperty = domObject.getProperty<number>(
+      "x",
+    )! as AnimatableProperty<number>;
+    const yProperty = domObject.getProperty<number>(
+      "y",
+    )! as AnimatableProperty<number>;
+    const rotationProperty = domObject.getProperty<number>(
+      "rotation",
+    )! as AnimatableProperty<number>;
 
     xProperty.addKeyframe({ time: 0, value: 0, interpolation: "Linear" });
     xProperty.addKeyframe({ time: 1, value: 100, interpolation: "Linear" });
@@ -597,7 +603,9 @@ describe("DOMTimelineObject", () => {
   });
 
   it("should apply opacity styles", () => {
-    const opacityProperty = domObject.getProperty<number>("opacity")!;
+    const opacityProperty = domObject.getProperty<number>(
+      "opacity",
+    )! as AnimatableProperty<number>;
     opacityProperty.addKeyframe({ time: 0, value: 1, interpolation: "Linear" });
     opacityProperty.addKeyframe({ time: 1, value: 0, interpolation: "Linear" });
 

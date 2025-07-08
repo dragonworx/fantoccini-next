@@ -3,8 +3,8 @@
  * Represents an object with animatable properties that can be placed on a timeline.
  */
 
-import { IObserver } from './observer.js';
-import { IAnimatableProperty, AnimatableProperty } from './keyframe.js';
+import { IObserver } from "./observer.js";
+import { IAnimatableProperty, AnimatableProperty } from "./keyframe.js";
 
 /**
  * An object with animatable properties that can be placed on a timeline.
@@ -33,7 +33,7 @@ export abstract class TimelineObject implements ITimelineObject {
    * @param name The name of the property.
    * @param defaultValue The default value for the property.
    */
-  protected addProperty<T>(name: string, defaultValue: T): AnimatableProperty<T> {
+  addProperty<T>(name: string, defaultValue: T): AnimatableProperty<T> {
     const property = new AnimatableProperty(defaultValue);
     this.properties.set(name, property);
     return property;
@@ -78,28 +78,27 @@ export abstract class TimelineObject implements ITimelineObject {
 export class DOMTimelineObject extends TimelineObject {
   constructor(private element: HTMLElement) {
     super();
-    
+
     // Add common CSS properties
-    this.addProperty('x', 0);
-    this.addProperty('y', 0);
-    this.addProperty('rotation', 0);
-    this.addProperty('scaleX', 1);
-    this.addProperty('scaleY', 1);
-    this.addProperty('opacity', 1);
+    this.addProperty("x", 0);
+    this.addProperty("y", 0);
+    this.addProperty("rotation", 0);
+    this.addProperty("scaleX", 1);
+    this.addProperty("scaleY", 1);
+    this.addProperty("opacity", 1);
   }
 
   protected applyState(values: Map<string, any>): void {
-    const x = values.get('x') || 0;
-    const y = values.get('y') || 0;
-    const rotation = values.get('rotation') || 0;
-    const scaleX = values.get('scaleX') || 1;
-    const scaleY = values.get('scaleY') || 1;
-    const opacity = values.get('opacity') || 1;
+    const x = values.get("x") || 0;
+    const y = values.get("y") || 0;
+    const rotation = values.get("rotation") || 0;
+    const scaleX = values.get("scaleX") || 1;
+    const scaleY = values.get("scaleY") || 1;
+    const opacity = values.get("opacity") || 1;
 
     // Apply transform
-    this.element.style.transform = 
-      `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
-    
+    this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+
     // Apply opacity
     this.element.style.opacity = opacity.toString();
   }
