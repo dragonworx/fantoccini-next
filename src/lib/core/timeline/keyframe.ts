@@ -193,19 +193,16 @@ export class AnimatableProperty<T> implements IAnimatableProperty<T> {
     const fromValue = before.value as number;
     const toValue = after.value as number;
 
-    // Get control points or use default ease-in-out
+    // Get control points or use ease curve (CSS standard) - more obvious non-linear
     const controlPoints = after.bezierControlPoints || {
       cp1: { time: 0.25, value: 0.1 },
-      cp2: { time: 0.75, value: 0.9 }
+      cp2: { time: 0.25, value: 1 }
     };
 
-    // Cubic Bezier formula: B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
-    // Where P₀ = 0, P₁ = cp1, P₂ = cp2, P₃ = 1 (in normalized space)
-    
-    // First, solve for the correct t value based on time using Newton-Raphson method
+    // Use Newton-Raphson to solve for the Y value given the X (time) progress
     const t = this.solveBezierT(progress, controlPoints.cp1.time, controlPoints.cp2.time);
     
-    // Then calculate the value using the solved t
+    // Calculate the Y value using the solved t parameter
     const valueProgress = this.cubicBezier(t, 0, controlPoints.cp1.value, controlPoints.cp2.value, 1);
     
     return (fromValue + (toValue - fromValue) * valueProgress) as T;
@@ -387,7 +384,7 @@ export class AnimatableProperty<T> implements IAnimatableProperty<T> {
     easing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
   ): IKeyframe<T> {
     const easingCurves = {
-      'ease': { cp1: { time: 0.25, value: 0.1 }, cp2: { time: 0.75, value: 0.9 } },
+      'ease': { cp1: { time: 0.25, value: 0.1 }, cp2: { time: 0.25, value: 1 } },
       'ease-in': { cp1: { time: 0.42, value: 0 }, cp2: { time: 1, value: 1 } },
       'ease-out': { cp1: { time: 0, value: 0 }, cp2: { time: 0.58, value: 1 } },
       'ease-in-out': { cp1: { time: 0.42, value: 0 }, cp2: { time: 0.58, value: 1 } }

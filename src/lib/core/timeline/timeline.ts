@@ -19,14 +19,22 @@ export interface ITimeline extends IObserver, IObservable {
   // --- Timing Properties ---
   /** The start time of this timeline, in seconds, relative to its parent's local time. */
   startTime: number;
-  /** The intrinsic duration of this timeline in seconds. */
-  duration: number;
+  /** The intrinsic duration of this timeline in seconds. If null, timeline has infinite duration. */
+  duration: number | null;
   /** The playback frame rate for this timeline's context. */
   framerate: number;
   /** A multiplier for playback speed relative to the parent. 1.0 is normal speed. */
   timeScale: number;
   /** The current local time of this timeline in seconds. */
   readonly currentTime: number;
+
+  // --- Loop Properties ---
+  /** Whether this timeline should loop when it reaches its duration. */
+  loop: boolean;
+  /** Number of times to repeat the loop. 0 means infinite loops, >1 means finite repeats. */
+  repeatCount: number;
+  /** The current loop iteration (read-only). */
+  readonly currentLoop: number;
 
   // --- Playback State & Control ---
   isPlaying: boolean;
@@ -58,21 +66,31 @@ export class Timeline extends Observable implements ITimeline {
 
   // Timing Properties
   public startTime: number = 0;
-  public duration: number = 10; // Default 10 seconds
+  public duration: number | null = null; // Default null (infinite duration)
   public framerate: number = 60; // Default 60 FPS
   public timeScale: number = 1; // Normal speed
+
+  // Loop Properties
+  public loop: boolean = false;
+  public repeatCount: number = 0; // 0 = infinite, >0 = finite repeats
+  private _currentLoop: number = 0;
 
   // Playback State
   public isPlaying: boolean = false;
   private _currentTime: number = 0;
+  private _rawTime: number = 0; // Unprocessed time for loop calculations
 
-  constructor(options: Partial<Pick<Timeline, 'startTime' | 'duration' | 'framerate' | 'timeScale'>> = {}) {
+  constructor(options: Partial<Pick<Timeline, 'startTime' | 'duration' | 'framerate' | 'timeScale' | 'loop' | 'repeatCount'>> = {}) {
     super();
     Object.assign(this, options);
   }
 
   get currentTime(): number {
     return this._currentTime;
+  }
+
+  get currentLoop(): number {
+    return this._currentLoop;
   }
 
   // --- Playback Control ---
@@ -94,10 +112,13 @@ export class Timeline extends Observable implements ITimeline {
   }
 
   seek(time: number, cascade: boolean = true): void {
-    this._currentTime = Math.max(0, time);
+    this._rawTime = Math.max(0, time);
+    this.updateTimeFromRaw();
     
-    // Update all children and objects immediately
-    this.updateChildren();
+    // Update timeline objects (not children - they'll be updated via cascade)
+    this.objects.forEach(object => {
+      object.update(this._currentTime);
+    });
     
     if (cascade) {
       this.children.forEach(child => {
@@ -151,16 +172,69 @@ export class Timeline extends Observable implements ITimeline {
     if (this.parent === null) {
       // Root timeline - context should be delta time in seconds
       if (this.isPlaying && typeof context === 'number') {
-        this._currentTime += context * this.timeScale;
+        this._rawTime += context * this.timeScale;
+        this.updateTimeFromRaw();
       }
     } else {
       // Child timeline - context should be parent's current time
       if (typeof context === 'number') {
-        this._currentTime = this.parentTimeToChildTime(context, this);
+        this._rawTime = this.parentTimeToChildTime(context, this);
+        this.updateTimeFromRaw();
       }
     }
 
     this.updateChildren();
+  }
+
+  /**
+   * Processes raw time according to duration and looping rules.
+   * Maps the raw time to the correct timeline local time.
+   */
+  private updateTimeFromRaw(): void {
+    if (this.duration === null) {
+      // Infinite duration - raw time becomes current time
+      this._currentTime = Math.max(0, this._rawTime);
+      this._currentLoop = 0;
+      return;
+    }
+
+    const duration = this.duration;
+    const rawTime = Math.max(0, this._rawTime);
+
+    if (!this.loop) {
+      // No looping - clamp to duration
+      this._currentTime = Math.min(rawTime, duration);
+      this._currentLoop = 0;
+      
+      // Stop playback if we've reached the end
+      if (rawTime >= duration) {
+        this.isPlaying = false;
+      }
+      return;
+    }
+
+    // Looping enabled
+    if (rawTime < duration) {
+      // Within first iteration
+      this._currentTime = rawTime;
+      this._currentLoop = 0;
+      return;
+    }
+
+    // Calculate loop iteration and local time
+    const totalLoops = Math.floor(rawTime / duration);
+    const localTime = rawTime % duration;
+
+    if (this.repeatCount > 0 && totalLoops >= this.repeatCount) {
+      // Finite loops - stop at the end of final iteration
+      this._currentTime = duration;
+      this._currentLoop = this.repeatCount - 1;
+      this.isPlaying = false;
+    } else {
+      // Continue looping (infinite or within repeat count)
+      this._currentTime = localTime;
+      this._currentLoop = totalLoops;
+    }
   }
 
   /**
@@ -198,6 +272,107 @@ export class Timeline extends Observable implements ITimeline {
 
   framesToLocalTime(frame: number): number {
     return frame / this.framerate;
+  }
+
+  // --- Loop Control Methods ---
+
+  /**
+   * Resets the timeline to the beginning and clears loop state.
+   */
+  reset(): void {
+    this._rawTime = 0;
+    this._currentTime = 0;
+    this._currentLoop = 0;
+    this.updateChildren();
+  }
+
+  /**
+   * Gets the total duration including all loops.
+   * Returns null if the timeline has infinite duration or infinite loops.
+   */
+  getTotalDuration(): number | null {
+    if (this.duration === null || (this.loop && this.repeatCount === 0)) {
+      return null; // Infinite duration
+    }
+    
+    if (!this.loop) {
+      return this.duration;
+    }
+    
+    return this.duration * this.repeatCount;
+  }
+
+  /**
+   * Gets the progress through the entire timeline including loops (0-1).
+   * Returns null if the timeline has infinite duration.
+   */
+  getTotalProgress(): number | null {
+    const totalDuration = this.getTotalDuration();
+    if (totalDuration === null) {
+      return null;
+    }
+    
+    return Math.min(1, this._rawTime / totalDuration);
+  }
+
+  /**
+   * Gets the progress through the current loop iteration (0-1).
+   * Returns null if the timeline has no duration.
+   */
+  getCurrentLoopProgress(): number | null {
+    if (this.duration === null) {
+      return null;
+    }
+    
+    return Math.min(1, this._currentTime / this.duration);
+  }
+
+  /**
+   * Checks if the timeline has completed all its loops.
+   */
+  isComplete(): boolean {
+    if (this.duration === null || (this.loop && this.repeatCount === 0)) {
+      return false; // Infinite timelines never complete
+    }
+    
+    if (!this.loop) {
+      return this._rawTime >= this.duration;
+    }
+    
+    return this.repeatCount > 0 && this._currentLoop >= this.repeatCount - 1 && this._currentTime >= this.duration;
+  }
+
+  /**
+   * Sets up the timeline for infinite looping.
+   */
+  setInfiniteLoop(): void {
+    if (this.duration === null) {
+      throw new Error('Cannot loop a timeline without a duration');
+    }
+    this.loop = true;
+    this.repeatCount = 0;
+  }
+
+  /**
+   * Sets up the timeline for finite looping.
+   */
+  setFiniteLoop(repeatCount: number): void {
+    if (this.duration === null) {
+      throw new Error('Cannot loop a timeline without a duration');
+    }
+    if (repeatCount < 1) {
+      throw new Error('Repeat count must be at least 1');
+    }
+    this.loop = true;
+    this.repeatCount = repeatCount;
+  }
+
+  /**
+   * Disables looping for the timeline.
+   */
+  disableLoop(): void {
+    this.loop = false;
+    this.repeatCount = 0;
   }
 
   // --- Debugging/Inspection ---
