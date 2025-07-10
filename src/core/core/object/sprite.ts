@@ -82,6 +82,8 @@ export interface SpriteOptions {
   parent?: Sprite | null;
   children?: Sprite[];
   selected?: boolean;
+  element?: HTMLElement;
+  preserveElementStyles?: boolean;
 }
 
 /**
@@ -115,9 +117,9 @@ export class Sprite {
    * The DOM element representing this sprite.
    * This is created during construction and can be appended to any container.
    * @readonly
-   * @type {HTMLDivElement}
+   * @type {HTMLElement}
    */
-	public readonly el: HTMLDivElement;
+	public readonly el: HTMLElement;
 
 	/**
    * Unique identifier for this sprite
@@ -161,12 +163,33 @@ export class Sprite {
 	private _border = '';
 	private _fill: FillStyle = { type: 'color', value: '#fff' };
 	private _dirty = true;
+	private _isFromDOMElement = false;
+	private _preserveElementStyles = false;
 
 	public constructor(options: SpriteOptions = {}) {
-		this.el = document.createElement('div');
-		this.el.style.position = 'absolute';
-		this.el.style.willChange = 'transform, background, border';
-		this.el.style.pointerEvents = 'auto';
+		if (options.element) {
+			this.el = options.element;
+			this._isFromDOMElement = true;
+			this._preserveElementStyles = options.preserveElementStyles ?? true;
+		} else {
+			this.el = document.createElement('div');
+			this._isFromDOMElement = false;
+			this._preserveElementStyles = false;
+		}
+		
+		if (!this._isFromDOMElement) {
+			this.el.style.position = 'absolute';
+			this.el.style.willChange = 'transform, background, border';
+			this.el.style.pointerEvents = 'auto';
+		} else {
+			if (window.getComputedStyle(this.el).position === 'static') {
+				this.el.style.position = 'relative';
+			}
+			this.el.style.willChange = 'transform';
+			if (!this.el.style.pointerEvents) {
+				this.el.style.pointerEvents = 'auto';
+			}
+		}
 
 		// Generate a random ID if not provided
 		this.id =
@@ -233,6 +256,29 @@ export class Sprite {
 		if (options.fill !== undefined) {
 			this.fill = options.fill;
 		}
+		
+		// If created from DOM element, extract initial dimensions and position
+		if (this._isFromDOMElement) {
+			const rect = this.el.getBoundingClientRect();
+			const computedStyle = window.getComputedStyle(this.el);
+			
+			// Set dimensions from actual element size if not provided
+			if (options.width === undefined) {
+				this._width = rect.width || 100;
+			}
+			if (options.height === undefined) {
+				this._height = rect.height || 100;
+			}
+			
+			// Extract position if element has positioning
+			if (options.x === undefined && computedStyle.position !== 'static') {
+				this._x = rect.left;
+			}
+			if (options.y === undefined && computedStyle.position !== 'static') {
+				this._y = rect.top;
+			}
+		}
+		
 		this._dirty = true;
 	}
 
@@ -412,40 +458,80 @@ export class Sprite {
 			_fill,
 		} = this;
 
-		// Use a fixed base size and scale via transform to maintain consistent transform origin
-		const baseWidth = 100;
-		const baseHeight = 100;
-		const widthScale = _width / baseWidth;
-		const heightScale = _height / baseHeight;
+		if (this._isFromDOMElement) {
+			// For DOM elements, apply transforms without changing original size
+			el.style.transformOrigin = `${_originX} ${_originY}`;
+			el.style.transform =
+				'perspective(800px) ' +
+				`translate3d(${_x}px, ${_y}px, ${_z}px) ` +
+				`scale(${1 + _z * 0.01}) ` +
+				`rotate(${_rotation}deg) ` +
+				`rotateX(${_rotationX}deg) ` +
+				`rotateY(${_rotationY}deg) ` +
+				`rotateZ(${_rotationZ}deg) ` +
+				`scaleX(${_scaleX}) ` +
+				`scaleY(${_scaleY}) ` +
+				`skewX(${_skewX}deg) ` +
+				`skewY(${_skewY}deg)`;
 
-		el.style.left = `${_x}px`;
-		el.style.top = `${_y}px`;
-		el.style.width = `${baseWidth}px`;
-		el.style.height = `${baseHeight}px`;
-		el.style.transformOrigin = `${_originX} ${_originY}`;
-		el.style.transform =
-      'perspective(800px) ' +
-      `translate3d(0,0,${_z}px) ` +
-      `scale(${1 + _z * 0.01}) ` +
-      `rotate(${_rotation}deg) ` +
-      `rotateX(${_rotationX}deg) ` +
-      `rotateY(${_rotationY}deg) ` +
-      `rotateZ(${_rotationZ}deg) ` +
-      `scaleX(${widthScale * _scaleX}) ` +
-      `scaleY(${heightScale * _scaleY}) ` +
-      `skewX(${_skewX}deg) ` +
-      `skewY(${_skewY}deg)`;
+			// Apply size changes if not preserving styles
+			if (!this._preserveElementStyles) {
+				el.style.width = `${_width}px`;
+				el.style.height = `${_height}px`;
+			}
+			
+			el.style.zIndex = String(Math.round(_z));
+			
+			// Apply border and fill only if not preserving styles
+			if (!this._preserveElementStyles) {
+				el.style.border = _border;
+				
+				// Fill style
+				if (_fill.type === 'color') {
+					el.style.background = _fill.value;
+				} else if (_fill.type === 'gradient') {
+					el.style.background = _fill.value;
+				} else if (_fill.type === 'image') {
+					el.style.background = `url('${_fill.value}') center/cover no-repeat`;
+				}
+			}
+		} else {
+			// Original behavior for created sprites
+			// Use a fixed base size and scale via transform to maintain consistent transform origin
+			const baseWidth = 100;
+			const baseHeight = 100;
+			const widthScale = _width / baseWidth;
+			const heightScale = _height / baseHeight;
 
-		el.style.zIndex = String(Math.round(_z));
-		el.style.border = _border;
+			el.style.left = `${_x}px`;
+			el.style.top = `${_y}px`;
+			el.style.width = `${baseWidth}px`;
+			el.style.height = `${baseHeight}px`;
+			el.style.transformOrigin = `${_originX} ${_originY}`;
+			el.style.transform =
+				'perspective(800px) ' +
+				`translate3d(0,0,${_z}px) ` +
+				`scale(${1 + _z * 0.01}) ` +
+				`rotate(${_rotation}deg) ` +
+				`rotateX(${_rotationX}deg) ` +
+				`rotateY(${_rotationY}deg) ` +
+				`rotateZ(${_rotationZ}deg) ` +
+				`scaleX(${widthScale * _scaleX}) ` +
+				`scaleY(${heightScale * _scaleY}) ` +
+				`skewX(${_skewX}deg) ` +
+				`skewY(${_skewY}deg)`;
 
-		// Fill style
-		if (_fill.type === 'color') {
-			el.style.background = _fill.value;
-		} else if (_fill.type === 'gradient') {
-			el.style.background = _fill.value;
-		} else if (_fill.type === 'image') {
-			el.style.background = `url('${_fill.value}') center/cover no-repeat`;
+			el.style.zIndex = String(Math.round(_z));
+			el.style.border = _border;
+
+			// Fill style
+			if (_fill.type === 'color') {
+				el.style.background = _fill.value;
+			} else if (_fill.type === 'gradient') {
+				el.style.background = _fill.value;
+			} else if (_fill.type === 'image') {
+				el.style.background = `url('${_fill.value}') center/cover no-repeat`;
+			}
 		}
 		this._dirty = false;
 	}
@@ -480,5 +566,108 @@ export class Sprite {
 		if (this.el.parentNode) {
 			this.el.parentNode.removeChild(this.el);
 		}
+	}
+
+	/**
+	 * Creates a Sprite from an existing DOM element, preserving its structure and styling.
+	 * This method can handle complex DOM hierarchies and convert them to sprite hierarchies.
+	 * 
+	 * @param element - The DOM element to convert to a sprite
+	 * @param options - Additional options for sprite creation
+	 * @param options.preserveElementStyles - Whether to preserve original element styles (default: true)
+	 * @param options.recursive - Whether to convert child elements to child sprites (default: true)
+	 * @returns The root sprite representing the DOM element hierarchy
+	 * 
+	 * @example
+	 * // Convert a simple element
+	 * const element = document.getElementById('myElement');
+	 * const sprite = Sprite.fromDOMElement(element);
+	 * 
+	 * @example
+	 * // Convert with custom options
+	 * const sprite = Sprite.fromDOMElement(element, {
+	 *   preserveElementStyles: false,
+	 *   recursive: true
+	 * });
+	 * 
+	 * @example
+	 * // Convert complex hierarchy
+	 * const cardElement = document.querySelector('.card');
+	 * const cardSprite = Sprite.fromDOMElement(cardElement);
+	 * // All child elements become child sprites
+	 */
+	public static fromDOMElement(
+		element: HTMLElement,
+		options: {
+			preserveElementStyles?: boolean;
+			recursive?: boolean;
+			parentSprite?: Sprite;
+		} = {}
+	): Sprite {
+		const { preserveElementStyles = true, recursive = true, parentSprite } = options;
+		
+		// Create sprite from element
+		const sprite = new Sprite({
+			element,
+			preserveElementStyles,
+			parent: parentSprite || null
+		});
+		
+		// Add to parent's children if parent exists
+		if (parentSprite) {
+			parentSprite.children.push(sprite);
+		}
+		
+		// Recursively convert child elements if requested
+		if (recursive) {
+			const childElements = Array.from(element.children) as HTMLElement[];
+			for (const childElement of childElements) {
+				Sprite.fromDOMElement(childElement, {
+					preserveElementStyles,
+					recursive: true,
+					parentSprite: sprite
+				});
+			}
+		}
+		
+		return sprite;
+	}
+
+	/**
+	 * Finds the root sprite in a hierarchy that was created from a DOM element.
+	 * This is useful for selection logic where clicking on a child should select the root.
+	 * 
+	 * @param sprite - The sprite to find the root for
+	 * @returns The root sprite of the DOM element hierarchy
+	 * 
+	 * @example
+	 * // Find root sprite for selection
+	 * const rootSprite = Sprite.findDOMElementRoot(clickedSprite);
+	 * selectSprite(rootSprite);
+	 */
+	public static findDOMElementRoot(sprite: Sprite): Sprite {
+		let current = sprite;
+		while (current.parent && current.parent._isFromDOMElement) {
+			current = current.parent;
+		}
+		return current;
+	}
+
+	/**
+	 * Checks if this sprite was created from a DOM element.
+	 * 
+	 * @returns True if this sprite was created from a DOM element
+	 */
+	public get isFromDOMElement(): boolean {
+		return this._isFromDOMElement;
+	}
+
+	/**
+	 * Gets whether this sprite preserves the original element's styles.
+	 * 
+	 * @returns True if original styles are preserved
+	 */
+	public get preserveElementStyles(): boolean {
+		return this._preserveElementStyles;
 	}
 }

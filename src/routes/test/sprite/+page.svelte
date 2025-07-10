@@ -343,6 +343,11 @@
 
 	// Select a sprite
 	function selectSprite(sprite: ExtendedSprite) {
+		// If this sprite is from a DOM element, select the root instead
+		if (sprite.isFromDOMElement) {
+			sprite = Sprite.findDOMElementRoot(sprite) as ExtendedSprite;
+		}
+
 		// Deselect current sprite
 		if (selectedSprite) {
 			selectedSprite.selected = false;
@@ -424,6 +429,160 @@
 		}
 	}
 
+	// DOM Element Examples
+	function createDOMElementExamples() {
+		// Create a complex card structure
+		const cardElement = document.createElement('div');
+		cardElement.className = 'demo-card';
+		cardElement.innerHTML = `
+			<div class="card-header">
+				<h3>Sample Card</h3>
+				<button class="card-button">Action</button>
+			</div>
+			<div class="card-body">
+				<p>This is a card created from a DOM element hierarchy.</p>
+				<div class="card-stats">
+					<span class="stat">Views: 42</span>
+					<span class="stat">Likes: 7</span>
+				</div>
+			</div>
+			<div class="card-footer">
+				<small>Created from DOM</small>
+			</div>
+		`;
+
+		// Style the card
+		Object.assign(cardElement.style, {
+			width: '250px',
+			height: '200px',
+			background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+			borderRadius: '12px',
+			color: 'white',
+			padding: '0',
+			boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+			overflow: 'hidden',
+			fontFamily: 'Arial, sans-serif'
+		});
+
+		// Style card sections
+		const header = cardElement.querySelector('.card-header') as HTMLElement;
+		if (header) {
+			Object.assign(header.style, {
+				padding: '16px',
+				borderBottom: '1px solid rgba(255,255,255,0.2)',
+				display: 'flex',
+				justifyContent: 'space-between',
+				alignItems: 'center'
+			});
+		}
+
+		const body = cardElement.querySelector('.card-body') as HTMLElement;
+		if (body) {
+			Object.assign(body.style, {
+				padding: '16px',
+				flex: '1'
+			});
+		}
+
+		const footer = cardElement.querySelector('.card-footer') as HTMLElement;
+		if (footer) {
+			Object.assign(footer.style, {
+				padding: '12px 16px',
+				background: 'rgba(0,0,0,0.2)',
+				borderTop: '1px solid rgba(255,255,255,0.1)'
+			});
+		}
+
+		const button = cardElement.querySelector('.card-button') as HTMLElement;
+		if (button) {
+			Object.assign(button.style, {
+				background: 'rgba(255,255,255,0.2)',
+				border: '1px solid rgba(255,255,255,0.3)',
+				color: 'white',
+				padding: '6px 12px',
+				borderRadius: '6px',
+				cursor: 'pointer',
+				fontSize: '12px'
+			});
+		}
+
+		const stats = cardElement.querySelector('.card-stats') as HTMLElement;
+		if (stats) {
+			Object.assign(stats.style, {
+				display: 'flex',
+				gap: '16px',
+				marginTop: '12px'
+			});
+		}
+
+		const statElements = cardElement.querySelectorAll('.stat');
+		statElements.forEach(stat => {
+			Object.assign((stat as HTMLElement).style, {
+				background: 'rgba(255,255,255,0.1)',
+				padding: '4px 8px',
+				borderRadius: '4px',
+				fontSize: '12px'
+			});
+		});
+
+		// Create sprite from DOM element
+		const cardSprite = Sprite.fromDOMElement(cardElement, {
+			preserveElementStyles: true,
+			recursive: true
+		});
+
+		// Position the card
+		cardSprite.x = 400;
+		cardSprite.y = 50;
+		cardSprite.id = ++spriteIdCounter;
+
+		// Add to sprites array
+		sprites.push(cardSprite);
+		spriteContainer.appendChild(cardSprite.el);
+		cardSprite.updateStyle();
+
+		// Create a navigation menu structure
+		const navElement = document.createElement('nav');
+		navElement.className = 'demo-nav';
+		navElement.innerHTML = `
+			<div class="nav-brand">Logo</div>
+			<ul class="nav-menu">
+				<li class="nav-item"><a href="#" class="nav-link">Home</a></li>
+				<li class="nav-item"><a href="#" class="nav-link">About</a></li>
+				<li class="nav-item"><a href="#" class="nav-link">Services</a></li>
+				<li class="nav-item"><a href="#" class="nav-link">Contact</a></li>
+			</ul>
+			<div class="nav-actions">
+				<button class="nav-btn">Sign In</button>
+				<button class="nav-btn primary">Sign Up</button>
+			</div>
+		`;
+
+		// Create sprite from navigation
+		const navSprite = Sprite.fromDOMElement(navElement, {
+			preserveElementStyles: true,
+			recursive: true
+		});
+
+		// Position the navigation
+		navSprite.x = 50;
+		navSprite.y = 280;
+		navSprite.id = ++spriteIdCounter;
+
+		// Add to sprites array
+		sprites.push(navSprite);
+		spriteContainer.appendChild(navSprite.el);
+		navSprite.updateStyle();
+
+		// Add click handlers to make DOM elements interactive
+		[cardSprite, navSprite].forEach(sprite => {
+			sprite.el.addEventListener('click', (e) => {
+				e.stopPropagation();
+				selectSprite(sprite);
+			});
+		});
+	}
+
 	onMount(() => {
 		if (!browser) return;
 
@@ -432,6 +591,9 @@
 		// Create initial sprite
 		const initialSprite = createSprite();
 		selectSprite(initialSprite);
+
+		// Create DOM element examples
+		createDOMElementExamples();
 	});
 
 	onDestroy(() => {
@@ -442,12 +604,18 @@
 	});
 </script>
 
-<div class="page-center dark">
-	<h1>Sprite Demo</h1>
+<div class="page-center">
 	<div class="demo-layout">
 		<!-- Controls Panel -->
 		<div class="controls-panel">
+			<div class="controls-header">
+				<h2>Sprite Controls</h2>
+			</div>
 			<div class="controls-grid">
+				<!-- Transform Properties -->
+				<div class="section-header">
+					<h3>Transform Properties</h3>
+				</div>
 				{#each spriteProperties as prop}
 					<div class="control-group">
 						<label for={prop.key}>{prop.label}</label>
@@ -488,6 +656,9 @@
 				{/each}
 
 				<!-- Fill Style Controls -->
+				<div class="section-header">
+					<h3>Fill Style</h3>
+				</div>
 				<div class="control-group fill-controls">
 					<label id="fill-style-label" for="color-radio"
 					>Fill Style</label
@@ -537,6 +708,23 @@
 							bind:value={fillImage}
 							placeholder="Image URL"
 						/>
+					{/if}
+				</div>
+
+				<!-- DOM Element Controls -->
+				<div class="button-row">
+					<h4>DOM Element Info</h4>
+					{#if selectedSprite?.isFromDOMElement}
+						<div class="dom-info">
+							<p>✓ Created from DOM element</p>
+							<p>Preserve styles: {selectedSprite.preserveElementStyles ? 'Yes' : 'No'}</p>
+							<p>Element: {selectedSprite.el.tagName.toLowerCase()}</p>
+							{#if selectedSprite.el.className}
+								<p>Class: {selectedSprite.el.className}</p>
+							{/if}
+						</div>
+					{:else}
+						<p>Regular sprite (not from DOM)</p>
 					{/if}
 				</div>
 
@@ -694,40 +882,89 @@
         --border-color: #3a3a3a;
     }
 
-    .dark {
-        background-color: var(--dark-bg);
-        color: var(--text-color);
-    }
-
     .page-center {
-        width: 100%;
-        min-height: 100vh;
-        padding: 20px;
+        position: absolute;
+        top: 50px; /* Offset by header height */
+        bottom: 40px; /* Offset by footer height */
+        left: 0;
+        right: 0;
+        padding: 10px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
         align-items: center;
+        overflow: hidden;
     }
 
     .demo-layout {
         width: 100%;
         max-width: 1200px;
+        height: 100%;
         display: flex;
         flex-direction: row;
-        gap: 20px;
+        gap: 15px;
     }
 
     .controls-panel {
         flex: 0 0 300px;
         background-color: var(--panel-bg);
         border-radius: 10px;
-        padding: 20px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        max-height: 100%;
+    }
+
+    .controls-header {
+        padding: 20px 20px 10px 20px;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    .controls-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-color);
     }
 
     .controls-grid {
         display: flex;
         flex-direction: column;
         gap: 15px;
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .controls-grid::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .controls-grid::-webkit-scrollbar-track {
+        background: var(--panel-bg);
+    }
+
+    .controls-grid::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 4px;
+    }
+
+    .controls-grid::-webkit-scrollbar-thumb:hover {
+        background: #666;
+    }
+
+    .section-header {
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-header h3 {
+        margin: 0;
+        font-size: 16px;
+        color: var(--primary-blue);
+        font-weight: 500;
     }
 
     .control-group {
@@ -816,6 +1053,14 @@
     .button-row {
         display: flex;
         flex-direction: column;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .button-row:first-of-type {
+        border-top: none;
+        padding-top: 0;
         margin-top: 15px;
     }
 
@@ -904,24 +1149,47 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 10px;
+        overflow: hidden;
+        min-height: 0;
+        min-width: 0;
     }
 
     .sprite-container {
         flex: 1;
-        min-height: 400px;
         background-color: var(--panel-bg);
         border-radius: 10px;
         position: relative;
         overflow: hidden;
+        min-height: 0;
+        min-width: 400px; /* Minimum width for demo content */
     }
 
     .property-display {
         background-color: var(--panel-bg);
         border-radius: 10px;
-        padding: 20px;
-        max-height: 300px;
+        padding: 10px;
+        height: 200px; /* Fixed height */
         overflow-y: auto;
+        overflow-x: hidden;
+        flex-shrink: 0;
+    }
+
+    .property-display::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .property-display::-webkit-scrollbar-track {
+        background: var(--panel-bg);
+    }
+
+    .property-display::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 4px;
+    }
+
+    .property-display::-webkit-scrollbar-thumb:hover {
+        background: #666;
     }
 
     .property-display h3 {
@@ -1016,18 +1284,49 @@
         border-left: 1px solid var(--border-color);
     }
 
+    .dom-info {
+        background: #333;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 8px;
+    }
+
+    .dom-info p {
+        margin: 4px 0;
+        font-size: 14px;
+        color: #ccc;
+    }
+
+    .dom-info p:first-child {
+        color: #4f8cff;
+        font-weight: 500;
+    }
+
     @media (max-width: 1000px) {
+        .page-center {
+            height: auto;
+            min-height: 100vh;
+            overflow: visible;
+        }
+
         .demo-layout {
             flex-direction: column;
+            height: auto;
         }
 
         .controls-panel {
             flex: auto;
             width: 100%;
+            max-height: 60vh;
         }
 
         .sprite-container {
             min-height: 300px;
+        }
+
+        .property-display {
+            height: auto;
+            max-height: 300px;
         }
     }
 </style>

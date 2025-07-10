@@ -68,11 +68,16 @@
         flex: 1;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
 
     footer {
+        height: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         background: #181c24;
-        padding: 1rem;
         border-top: 1px solid #505050;
         text-align: center;
         color: #666;

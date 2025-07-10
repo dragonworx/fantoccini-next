@@ -551,8 +551,6 @@
 <LaunchAudioDialog onLaunch={handleAudioLaunch} />
 
 <div class="page-center dark">
-	<h1>Metronome</h1>
-
 	<div class="controls-grid" style="flex: 1 0 auto;">
 		<div class="row">
 			<div class="control-group">
@@ -742,6 +740,7 @@
         max-width: 100vw;
         box-sizing: border-box;
         overflow-x: hidden;
+        margin-top: 30px;
     }
     .controls-grid {
         display: grid;
