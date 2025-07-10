@@ -33,6 +33,7 @@ import { IAnimatableProperty, AnimatableProperty } from './keyframe.js';
  * recalculates all property values and applies them to its target.
  *
  * @interface ITimelineObject
+ * @memberof core.timeline
  * @extends IObserver
  *
  * @example
@@ -86,6 +87,7 @@ export interface ITimelineObject extends IObserver {
  *
  * @abstract
  * @class TimelineObject
+ * @memberof core.timeline
  * @implements {ITimelineObject}
  *
  * @example
@@ -209,6 +211,7 @@ export abstract class TimelineObject implements ITimelineObject {
  * of an HTML element, including position, scale, rotation, and opacity.
  *
  * @class DOMTimelineObject
+ * @memberof core.timeline
  * @extends {TimelineObject}
  *
  * @example
@@ -269,6 +272,7 @@ export class DOMTimelineObject extends TimelineObject {
  * in custom rendering logic.
  *
  * @class GenericTimelineObject
+ * @memberof core.timeline
  * @extends {TimelineObject}
  *
  * @example

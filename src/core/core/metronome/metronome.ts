@@ -35,7 +35,7 @@ type PulseListener = (pulse: Pulse) => void;
  * It emits pulses and events that can be used to synchronize visual or audio elements.
  *
  * @class Metronome
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @example
  * // Create a metronome with default 4/4 rhythm at 120 BPM

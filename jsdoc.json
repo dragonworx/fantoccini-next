@@ -1,8 +1,8 @@
 {
   "source": {
-    "include": ["./src/lib/core/", "./src/lib/metronome/"],
+    "include": ["./src/core/", "./src/lib/components/", "./src/routes/"],
     "includePattern": "\\.(js|ts|tsx)$",
-    "exclude": ["node_modules/", "dist/", "build/"]
+    "exclude": ["node_modules/", "dist/", "build/", "./src/routes/+*"]
   },
   "opts": {
     "destination": "./doc-gen/",
@@ -42,8 +42,16 @@
         "href": "module-core.html"
       },
       {
-        "label": "🎵 Metronome API", 
-        "href": "module-metronome.html"
+        "label": "🎵 Metronome API",
+        "href": "module-core.metronome.html"
+      },
+      {
+        "label": "✏️ Editor API",
+        "href": "module-editor.html"
+      },
+      {
+        "label": "▶️ Player API",
+        "href": "module-player.html"
       }
     ]
   }

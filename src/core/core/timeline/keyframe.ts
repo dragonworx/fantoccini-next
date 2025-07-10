@@ -39,6 +39,7 @@
  * Values are relative to the keyframe values (0-1 range typically).
  *
  * @interface BezierControlPoints
+ * @memberof core.timeline
  *
  * @example
  * // Control points for an ease-in-out curve
@@ -77,6 +78,7 @@ export interface BezierControlPoints {
  * information about how to interpolate to/from this value.
  *
  * @interface IKeyframe
+ * @memberof core.timeline
  * @template T The data type of the value (e.g., number, string, object)
  *
  * @example
@@ -136,6 +138,7 @@ export interface IKeyframe<T> {
  * This interface defines how property values are stored and interpolated over time.
  *
  * @interface IAnimatableProperty
+ * @memberof core.timeline
  * @template T The data type of the value (e.g., number, string, object)
  *
  * @example
@@ -181,6 +184,7 @@ export interface IAnimatableProperty<T> {
  * various interpolation methods.
  *
  * @class AnimatableProperty
+ * @memberof core.timeline
  * @implements {IAnimatableProperty<T>}
  * @template T The data type of the property value
  *

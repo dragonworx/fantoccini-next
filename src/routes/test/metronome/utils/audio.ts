@@ -1,3 +1,10 @@
+/**
+ * @namespace editor
+ * @description Editor utilities and components for the application interface.
+ * This namespace contains UI components, route handlers, and utilities
+ * used in the editor interface.
+ */
+
 // Web Audio utility for metronome pulse and measure sounds
 
 // Type declaration for browsers that might have webkitAudioContext
@@ -30,6 +37,14 @@ function getAudioContext(): AudioContext | null {
 	return audioCtx;
 }
 
+/**
+ * Plays a sound for metronome pulses with different tones for different beat types.
+ * @memberof editor
+ * @param {Object} options - Sound options
+ * @param {boolean} [options.isNewMeasure=false] - Whether this is the first beat of a new measure
+ * @param {boolean} [options.isDownBeat=false] - Whether this is a downbeat
+ * @returns {void}
+ */
 export function playPulseSound({
 	isNewMeasure = false,
 	isDownBeat = false,
@@ -84,7 +99,12 @@ export function playPulseSound({
 	};
 }
 
-// Initialize and unlock audio context on user gesture
+/**
+ * Initialize and unlock audio context on user gesture.
+ * Must be called after a user interaction to enable audio in browsers.
+ * @memberof editor
+ * @returns {boolean|undefined} True if audio context was successfully created, undefined if not in browser
+ */
 export function unlockAudioContext(): boolean | undefined {
 	if (!isBrowser) {
 		return;

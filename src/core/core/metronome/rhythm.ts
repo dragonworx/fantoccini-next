@@ -57,7 +57,7 @@ export const demisemihemidemisemiquaver: NoteDivision = 64;
  * defining both regular and complex rhythmic structures.
  *
  * @class Rhythm
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @example
  * // Create a standard 4/4 rhythm at 120 BPM

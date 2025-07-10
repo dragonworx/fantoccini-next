@@ -1,8 +1,8 @@
 {
   "source": {
-    "include": ["./src/lib/core/", "./src/lib/metronome/"],
+    "include": ["./src/core/", "./src/lib/components/", "./src/routes/"],
     "includePattern": "\\.(js|ts|tsx)$",
-    "exclude": ["node_modules/", "dist/", "build/"]
+    "exclude": ["node_modules/", "dist/", "build/", "./src/routes/+*"]
   },
   "opts": {
     "destination": "./doc-gen/",
@@ -22,7 +22,7 @@
     "sort": true,
     "sectionOrder": [
       "Classes",
-      "Modules", 
+      "Modules",
       "Externals",
       "Events",
       "Namespaces",

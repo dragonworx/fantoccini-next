@@ -9,6 +9,8 @@ import { ITimelineObject } from './timeline-object.js';
 /**
  * A self-nesting temporal container that manages playback and time conversion.
  * It acts as both an Observer (of its parent) and an Observable (to its children).
+ * @interface ITimeline
+ * @memberof core.timeline
  */
 export interface ITimeline extends IObserver, IObservable {
   // --- Hierarchy ---
@@ -57,6 +59,8 @@ export interface ITimeline extends IObserver, IObservable {
 
 /**
  * Implementation of ITimeline that manages hierarchical time and playback.
+ * @class Timeline
+ * @memberof core.timeline
  */
 export class Timeline extends Observable implements ITimeline {
 	// Hierarchy

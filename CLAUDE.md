@@ -76,9 +76,10 @@ The runtime for playing back content created in the editor:
 
 ## Current File Structure (Transitional)
 
-**Note**: The current file structure uses `src/lib/` for core components but will be reorganized to:
-- `src/core/` - Core animation engine (currently `src/lib/core/` and `src/lib/metronome/`)
-- `src/editor/` - Editor UI and runtime (currently `src/lib/components/` and `src/routes/`)
+**Note**: The file structure is currently organized as:
+- `src/core/` - Core animation engine (timeline, sprite, metronome systems)
+- `src/lib/components/` - Editor UI components (will move to `src/editor/`)
+- `src/routes/` - Editor runtime and pages (will move to `src/editor/`)
 - `src/player/` - Player runtime (to be created)
 
 ## Code Style Guidelines
@@ -100,12 +101,38 @@ The runtime for playing back content created in the editor:
 
 ## Documentation Standards
 
-This project uses comprehensive JSDoc documentation with namespaces:
-- `@namespace core` for animation engine
-- `@namespace core.timeline` for timeline system
-- `@namespace metronome` for timing system
+This project uses comprehensive JSDoc documentation with a three-part namespace architecture:
+
+### Namespace Structure
+All source files MUST use the correct namespace based on their location:
+
+**Core Namespace (`@namespace core`)**
+- Files in `src/core/` (except timeline and metronome subdirectories)
+- Scene and Sprite system: `@namespace core` and `@memberof core`
+
+**Core Timeline Namespace (`@namespace core.timeline`)**
+- Files in `src/core/core/timeline/`
+- Use `@namespace core.timeline` for the main export file
+- Use `@memberof core.timeline` for classes and interfaces
+
+**Core Metronome Namespace (`@namespace core.metronome`)**
+- Files in `src/core/core/metronome/`
+- Use `@namespace core.metronome` for the main export file
+- Use `@memberof core.metronome` for classes and interfaces
+
+**Editor Namespace (`@namespace editor`)**
+- Files in `src/lib/components/` and `src/routes/`
+- Use `@namespace editor` and `@memberof editor`
+
+**Player Namespace (`@namespace player`)**
+- Future files in `src/player/` (when created)
+- Use `@namespace player` and `@memberof player`
+
+### Documentation Requirements
 - Include detailed `@example` blocks for public APIs
 - Use `@memberof` to organize classes within namespaces
+- Always specify the correct namespace based on file location
+- Maintain consistency with the three-part architecture
 
 ## Testing Strategy
 

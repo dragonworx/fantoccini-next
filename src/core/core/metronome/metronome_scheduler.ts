@@ -10,7 +10,7 @@ type PulseCallback = () => void;
 /**
  * Configuration options for the MetronomeScheduler.
  * @interface MetronomeSchedulerOptions
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @property {number} [tempoBeat] - Duration of a beat in milliseconds
  * @property {number[]} [rhythmPattern] - Array of beat multipliers (e.g., [1, 0.5, 1.5] for swing)
@@ -38,7 +38,7 @@ export interface MetronomeSchedulerOptions {
  * pause/resume functionality.
  *
  * @class MetronomeScheduler
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @example
  * // Create a basic scheduler

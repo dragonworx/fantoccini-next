@@ -28,6 +28,7 @@
  * observables they are subscribed to.
  *
  * @interface IObserver
+ * @memberof core.timeline
  *
  * @example
  * class MyObserver implements IObserver {
@@ -47,6 +48,7 @@ export interface IObserver<T = unknown> {
  * state changes.
  *
  * @interface IObservable
+ * @memberof core.timeline
  *
  * @example
  * class MyObservable implements IObservable {
@@ -86,6 +88,7 @@ export interface IObservable<T = unknown> {
  *
  * @abstract
  * @class Observable
+ * @memberof core.timeline
  * @implements {IObservable}
  *
  * @example

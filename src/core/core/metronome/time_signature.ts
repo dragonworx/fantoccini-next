@@ -6,7 +6,7 @@
  * - The lower number (denominator) indicates what note value constitutes one beat
  *
  * @class TimeSignature
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @example
  * // Create a 3/4 time signature (waltz time)

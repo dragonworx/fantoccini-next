@@ -1,5 +1,5 @@
 /**
- * @namespace metronome
+ * @namespace core.metronome
  * @description A comprehensive module for musical timing, rhythm generation, and precise
  * tempo control. This module provides components for building applications
  * that require musical timing, such as:
@@ -48,7 +48,7 @@ import {
  * Main exports from the metronome module.
  * These components provide a complete system for musical timing.
  *
- * @memberof metronome
+ * @memberof core.metronome
  * @see {@link Metronome} - The main metronome class
  * @see {@link TimeSignature} - Musical time signature representation
  * @see {@link Rhythm} - Defines tempo, time signature, and subdivisions

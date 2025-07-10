@@ -6,7 +6,7 @@
  * by the metronome and passed to pulse listeners.
  *
  * @class Pulse
- * @memberof metronome
+ * @memberof core.metronome
  *
  * @example
  * metronome.onPulse(pulse => {
