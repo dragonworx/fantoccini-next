@@ -18,33 +18,42 @@
     "moduleRoot": "./src/"
   },
   "better-docs": {
-    "name": "🎭 Fantoccini Animation Engine",
+    "name": "Fantoccini Animation Engine",
     "title": "Fantoccini Documentation",
     "hideGenerator": true,
-    "theme": "dark",
+    "logo": "assets/logo.png",
     "navigation": [
       {
         "label": "GitHub",
         "href": "https://github.com/your-username/fantoccini"
       },
       {
-        "label": "Examples",
-        "href": "https://fantoccini-examples.com"
+        "label": "Examples", 
+        "href": "/examples"
       }
     ],
+    "trackingCode": "",
     "navLinks": [
       {
-        "label": "🏠 Home",
-        "href": "index.html"
+        "label": "Home",
+        "href": "/"
       },
       {
-        "label": "🎨 Core API",
-        "href": "module-core.html"
+        "label": "Core API",
+        "href": "/module-core.html"
       },
       {
-        "label": "🎵 Metronome API", 
-        "href": "module-metronome.html"
+        "label": "Metronome API", 
+        "href": "/module-metronome.html"
+      },
+      {
+        "label": "Tutorials",
+        "href": "/tutorials"
       }
-    ]
+    ],
+    "component": {
+      "wrapper": "./docs/components/",
+      "examples": "./docs/examples/"
+    }
   }
 }

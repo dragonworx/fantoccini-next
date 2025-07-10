@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
-    import { browser } from "$app/environment";
-    import { Sprite, type FillStyle } from "$lib/core/sprite";
+    import { onMount, onDestroy } from 'svelte';
+    import { browser } from '$app/environment';
+    import { Sprite, type FillStyle } from '$lib/core/sprite';
 
     // Sprite management
     let sprites: Sprite[] = [];
@@ -16,7 +16,7 @@
     interface PropertyConfig {
         key: keyof Sprite;
         label: string;
-        type: "number" | "select" | "text" | "range" | "fillstyle";
+        type: 'number' | 'select' | 'text' | 'range' | 'fillstyle';
         min?: number;
         max?: number;
         step?: number;
@@ -25,193 +25,193 @@
     }
 
     const spriteProperties: PropertyConfig[] = [
-        // Position & Dimensions
-        {
-            key: "x",
-            label: "X Position",
-            type: "range",
-            min: -200,
-            max: 400,
-            step: 1,
-            defaultValue: 150,
-        },
-        {
-            key: "y",
-            label: "Y Position",
-            type: "range",
-            min: -200,
-            max: 400,
-            step: 1,
-            defaultValue: 150,
-        },
-        {
-            key: "z",
-            label: "Z Position",
-            type: "range",
-            min: -100,
-            max: 100,
-            step: 1,
-            defaultValue: 0,
-        },
-        {
-            key: "width",
-            label: "Width",
-            type: "range",
-            min: 10,
-            max: 300,
-            step: 1,
-            defaultValue: 100,
-        },
-        {
-            key: "height",
-            label: "Height",
-            type: "range",
-            min: 10,
-            max: 300,
-            step: 1,
-            defaultValue: 100,
-        },
+    	// Position & Dimensions
+    	{
+    		key: 'x',
+    		label: 'X Position',
+    		type: 'range',
+    		min: -200,
+    		max: 400,
+    		step: 1,
+    		defaultValue: 150,
+    	},
+    	{
+    		key: 'y',
+    		label: 'Y Position',
+    		type: 'range',
+    		min: -200,
+    		max: 400,
+    		step: 1,
+    		defaultValue: 150,
+    	},
+    	{
+    		key: 'z',
+    		label: 'Z Position',
+    		type: 'range',
+    		min: -100,
+    		max: 100,
+    		step: 1,
+    		defaultValue: 0,
+    	},
+    	{
+    		key: 'width',
+    		label: 'Width',
+    		type: 'range',
+    		min: 10,
+    		max: 300,
+    		step: 1,
+    		defaultValue: 100,
+    	},
+    	{
+    		key: 'height',
+    		label: 'Height',
+    		type: 'range',
+    		min: 10,
+    		max: 300,
+    		step: 1,
+    		defaultValue: 100,
+    	},
 
-        // Transform Origin
-        {
-            key: "originX",
-            label: "Origin X",
-            type: "select",
-            options: [
-                { value: "0%", label: "Left (0%)" },
-                { value: "50%", label: "Center (50%)" },
-                { value: "100%", label: "Right (100%)" },
-                { value: 0, label: "0px" },
-                { value: 50, label: "50px" },
-            ],
-            defaultValue: "50%",
-        },
-        {
-            key: "originY",
-            label: "Origin Y",
-            type: "select",
-            options: [
-                { value: "0%", label: "Top (0%)" },
-                { value: "50%", label: "Center (50%)" },
-                { value: "100%", label: "Bottom (100%)" },
-                { value: 0, label: "0px" },
-                { value: 50, label: "50px" },
-            ],
-            defaultValue: "50%",
-        },
+    	// Transform Origin
+    	{
+    		key: 'originX',
+    		label: 'Origin X',
+    		type: 'select',
+    		options: [
+    			{ value: '0%', label: 'Left (0%)' },
+    			{ value: '50%', label: 'Center (50%)' },
+    			{ value: '100%', label: 'Right (100%)' },
+    			{ value: 0, label: '0px' },
+    			{ value: 50, label: '50px' },
+    		],
+    		defaultValue: '50%',
+    	},
+    	{
+    		key: 'originY',
+    		label: 'Origin Y',
+    		type: 'select',
+    		options: [
+    			{ value: '0%', label: 'Top (0%)' },
+    			{ value: '50%', label: 'Center (50%)' },
+    			{ value: '100%', label: 'Bottom (100%)' },
+    			{ value: 0, label: '0px' },
+    			{ value: 50, label: '50px' },
+    		],
+    		defaultValue: '50%',
+    	},
 
-        // Rotation
-        {
-            key: "rotation",
-            label: "Rotation",
-            type: "range",
-            min: -180,
-            max: 180,
-            step: 1,
-            defaultValue: 0,
-        },
-        {
-            key: "rotationX",
-            label: "Rotation X",
-            type: "range",
-            min: -180,
-            max: 180,
-            step: 1,
-            defaultValue: 0,
-        },
-        {
-            key: "rotationY",
-            label: "Rotation Y",
-            type: "range",
-            min: -180,
-            max: 180,
-            step: 1,
-            defaultValue: 0,
-        },
-        {
-            key: "rotationZ",
-            label: "Rotation Z",
-            type: "range",
-            min: -180,
-            max: 180,
-            step: 1,
-            defaultValue: 0,
-        },
+    	// Rotation
+    	{
+    		key: 'rotation',
+    		label: 'Rotation',
+    		type: 'range',
+    		min: -180,
+    		max: 180,
+    		step: 1,
+    		defaultValue: 0,
+    	},
+    	{
+    		key: 'rotationX',
+    		label: 'Rotation X',
+    		type: 'range',
+    		min: -180,
+    		max: 180,
+    		step: 1,
+    		defaultValue: 0,
+    	},
+    	{
+    		key: 'rotationY',
+    		label: 'Rotation Y',
+    		type: 'range',
+    		min: -180,
+    		max: 180,
+    		step: 1,
+    		defaultValue: 0,
+    	},
+    	{
+    		key: 'rotationZ',
+    		label: 'Rotation Z',
+    		type: 'range',
+    		min: -180,
+    		max: 180,
+    		step: 1,
+    		defaultValue: 0,
+    	},
 
-        // Scale
-        {
-            key: "scaleX",
-            label: "Scale X",
-            type: "range",
-            min: 0.1,
-            max: 3,
-            step: 0.1,
-            defaultValue: 1,
-        },
-        {
-            key: "scaleY",
-            label: "Scale Y",
-            type: "range",
-            min: 0.1,
-            max: 3,
-            step: 0.1,
-            defaultValue: 1,
-        },
+    	// Scale
+    	{
+    		key: 'scaleX',
+    		label: 'Scale X',
+    		type: 'range',
+    		min: 0.1,
+    		max: 3,
+    		step: 0.1,
+    		defaultValue: 1,
+    	},
+    	{
+    		key: 'scaleY',
+    		label: 'Scale Y',
+    		type: 'range',
+    		min: 0.1,
+    		max: 3,
+    		step: 0.1,
+    		defaultValue: 1,
+    	},
 
-        // Skew
-        {
-            key: "skewX",
-            label: "Skew X",
-            type: "range",
-            min: -45,
-            max: 45,
-            step: 1,
-            defaultValue: 0,
-        },
-        {
-            key: "skewY",
-            label: "Skew Y",
-            type: "range",
-            min: -45,
-            max: 45,
-            step: 1,
-            defaultValue: 0,
-        },
+    	// Skew
+    	{
+    		key: 'skewX',
+    		label: 'Skew X',
+    		type: 'range',
+    		min: -45,
+    		max: 45,
+    		step: 1,
+    		defaultValue: 0,
+    	},
+    	{
+    		key: 'skewY',
+    		label: 'Skew Y',
+    		type: 'range',
+    		min: -45,
+    		max: 45,
+    		step: 1,
+    		defaultValue: 0,
+    	},
 
-        // Border
-        {
-            key: "border",
-            label: "Border",
-            type: "text",
-            defaultValue: "2px solid #4f8cff",
-        },
+    	// Border
+    	{
+    		key: 'border',
+    		label: 'Border',
+    		type: 'text',
+    		defaultValue: '2px solid #4f8cff',
+    	},
     ];
 
     // Reactive properties object
     let properties: Record<string, any> = {};
 
     // Fill style options
-    let fillType: "color" | "gradient" | "image" = "color";
-    let fillColor = "#4f8cff";
-    let fillGradient = "linear-gradient(45deg, #4f8cff, #00ff99)";
-    let fillImage = "https://placekitten.com/200/200";
+    let fillType: 'color' | 'gradient' | 'image' = 'color';
+    let fillColor = '#4f8cff';
+    let fillGradient = 'linear-gradient(45deg, #4f8cff, #00ff99)';
+    let fillImage = 'https://placekitten.com/200/200';
     let fillStyle: FillStyle;
 
     // Initialize properties with defaults
     function initializeProperties() {
-        properties = {};
-        spriteProperties.forEach((prop) => {
-            properties[prop.key] = prop.defaultValue;
-        });
+    	properties = {};
+    	spriteProperties.forEach((prop) => {
+    		properties[prop.key] = prop.defaultValue;
+    	});
     }
 
     // Reactive fill style based on type
     $: fillStyle =
-        fillType === "color"
-            ? ({ type: "color", value: fillColor } as FillStyle)
-            : fillType === "gradient"
-              ? ({ type: "gradient", value: fillGradient } as FillStyle)
-              : ({ type: "image", value: fillImage } as FillStyle);
+        fillType === 'color'
+        	? ({ type: 'color', value: fillColor } as FillStyle)
+        	: fillType === 'gradient'
+        		? ({ type: 'gradient', value: fillGradient } as FillStyle)
+        		: ({ type: 'image', value: fillImage } as FillStyle);
 
     // Animation control
     let isAnimating = false;
@@ -219,138 +219,138 @@
 
     // Update selected sprite when properties change
     $: if (selectedSprite && browser) {
-        // Update all numeric/string properties
-        spriteProperties.forEach((prop) => {
-            if (properties[prop.key] !== undefined) {
-                (selectedSprite as any)[prop.key] = properties[prop.key];
-            }
-        });
+    	// Update all numeric/string properties
+    	spriteProperties.forEach((prop) => {
+    		if (properties[prop.key] !== undefined) {
+    			(selectedSprite as any)[prop.key] = properties[prop.key];
+    		}
+    	});
 
-        // Update fill style
-        selectedSprite.fill = fillStyle;
+    	// Update fill style
+    	selectedSprite.fill = fillStyle;
 
-        // Update the visual representation
-        selectedSprite.updateStyle();
+    	// Update the visual representation
+    	selectedSprite.updateStyle();
     }
 
     // Animation functions
     function startAnimation() {
-        if (!selectedSprite || isAnimating) return;
-        isAnimating = true;
+    	if (!selectedSprite || isAnimating) return;
+    	isAnimating = true;
 
-        const startTime = performance.now();
+    	const startTime = performance.now();
 
-        function animate(currentTime: number) {
-            if (!selectedSprite || !isAnimating) return;
+    	function animate(currentTime: number) {
+    		if (!selectedSprite || !isAnimating) return;
 
-            const elapsed = currentTime - startTime;
-            const progress = (elapsed / 3000) % 1; // 3 second cycle
+    		const elapsed = currentTime - startTime;
+    		const progress = (elapsed / 3000) % 1; // 3 second cycle
 
-            // Animate rotation
-            selectedSprite.rotation = progress * 360;
+    		// Animate rotation
+    		selectedSprite.rotation = progress * 360;
 
-            // Animate position in a circle
-            const centerX = properties.x || 150;
-            const centerY = properties.y || 150;
-            const radius = 50;
-            selectedSprite.x =
+    		// Animate position in a circle
+    		const centerX = properties.x || 150;
+    		const centerY = properties.y || 150;
+    		const radius = 50;
+    		selectedSprite.x =
                 centerX + Math.cos(progress * Math.PI * 2) * radius;
-            selectedSprite.y =
+    		selectedSprite.y =
                 centerY + Math.sin(progress * Math.PI * 2) * radius;
 
-            // Animate scale
-            selectedSprite.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.3;
-            selectedSprite.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.3;
+    		// Animate scale
+    		selectedSprite.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.3;
+    		selectedSprite.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.3;
 
-            selectedSprite.updateStyle();
-            animationFrame = requestAnimationFrame(animate);
-        }
+    		selectedSprite.updateStyle();
+    		animationFrame = requestAnimationFrame(animate);
+    	}
 
-        animationFrame = requestAnimationFrame(animate);
+    	animationFrame = requestAnimationFrame(animate);
     }
 
     function stopAnimation() {
-        isAnimating = false;
-        if (animationFrame !== null) {
-            cancelAnimationFrame(animationFrame);
-            animationFrame = null;
-        }
+    	isAnimating = false;
+    	if (animationFrame !== null) {
+    		cancelAnimationFrame(animationFrame);
+    		animationFrame = null;
+    	}
 
-        // Reset to current property values
-        if (selectedSprite) {
-            spriteProperties.forEach((prop) => {
-                if (properties[prop.key] !== undefined) {
-                    (selectedSprite as any)[prop.key] = properties[prop.key];
-                }
-            });
-            selectedSprite.updateStyle();
-        }
+    	// Reset to current property values
+    	if (selectedSprite) {
+    		spriteProperties.forEach((prop) => {
+    			if (properties[prop.key] !== undefined) {
+    				(selectedSprite as any)[prop.key] = properties[prop.key];
+    			}
+    		});
+    		selectedSprite.updateStyle();
+    	}
     }
 
     function toggleAnimation() {
-        if (isAnimating) {
-            stopAnimation();
-        } else {
-            startAnimation();
-        }
+    	if (isAnimating) {
+    		stopAnimation();
+    	} else {
+    		startAnimation();
+    	}
     }
 
     function resetProperties() {
-        stopAnimation();
-        if (selectedSprite) {
-            loadPropertiesFromSprite(selectedSprite as ExtendedSprite);
-        } else {
-            initializeProperties();
-            fillType = "color";
-            fillColor = "#4f8cff";
-        }
+    	stopAnimation();
+    	if (selectedSprite) {
+    		loadPropertiesFromSprite(selectedSprite as ExtendedSprite);
+    	} else {
+    		initializeProperties();
+    		fillType = 'color';
+    		fillColor = '#4f8cff';
+    	}
     }
 
     // Sprite creation
     function createSprite(parent?: ExtendedSprite): ExtendedSprite {
-        const newSprite = new Sprite({
-            x: 150,
-            y: 150,
-            z: 0,
-            width: 100,
-            height: 100,
-            fill: { type: "color", value: "#4f8cff" },
-        }) as ExtendedSprite;
+    	const newSprite = new Sprite({
+    		x: 150,
+    		y: 150,
+    		z: 0,
+    		width: 100,
+    		height: 100,
+    		fill: { type: 'color', value: '#4f8cff' },
+    	}) as ExtendedSprite;
 
-        newSprite.id = ++spriteIdCounter;
-        newSprite.children = [];
-        newSprite.selected = false;
+    	newSprite.id = ++spriteIdCounter;
+    	newSprite.children = [];
+    	newSprite.selected = false;
 
-        // Add selection styling
-        newSprite.el.style.cursor = "pointer";
-        newSprite.el.addEventListener("click", (e) => {
-            e.stopPropagation();
-            selectSprite(newSprite);
-        });
+    	// Add selection styling
+    	newSprite.el.style.cursor = 'pointer';
+    	newSprite.el.addEventListener('click', (e) => {
+    		e.stopPropagation();
+    		selectSprite(newSprite);
+    	});
 
-        if (parent) {
-            newSprite.parent = parent;
-            parent.children?.push(newSprite);
-        }
+    	if (parent) {
+    		newSprite.parent = parent;
+    		parent.children?.push(newSprite);
+    	}
 
-        // Add to sprites array and DOM
-        sprites.push(newSprite);
-        newSprite.updateStyle();
-        spriteContainer.appendChild(newSprite.el);
+    	// Add to sprites array and DOM
+    	sprites.push(newSprite);
+    	newSprite.updateStyle();
+    	spriteContainer.appendChild(newSprite.el);
 
-        return newSprite;
+    	return newSprite;
     }
 
     // Select a sprite
     function selectSprite(sprite: ExtendedSprite) {
-        // Deselect current sprite
-        if (selectedSprite) {
-            selectedSprite.selected = false;
-            updateSpriteSelection(selectedSprite as ExtendedSprite);
-        }
+    	// Deselect current sprite
+    	if (selectedSprite) {
+    		selectedSprite.selected = false;
+    		updateSpriteSelection(selectedSprite as ExtendedSprite);
+    	}
 
-        // Select new sprite
-        selectedSprite = sprite;
+    	// Select new sprite
+    	selectedSprite = sprite;
         selectedSprite!.selected = true;
         updateSpriteSelection(selectedSprite as ExtendedSprite);
 
@@ -359,86 +359,86 @@
     }
 
     function updateSpriteSelection(sprite: ExtendedSprite) {
-        if (sprite.selected) {
-            sprite.el.style.boxShadow = "0 0 0 4px rgba(79, 140, 255, 0.8)";
-            sprite.el.style.zIndex = "1000";
-        } else {
-            sprite.el.style.boxShadow = "none";
-            sprite.el.style.zIndex = String(Math.round(sprite.z));
-        }
+    	if (sprite.selected) {
+    		sprite.el.style.boxShadow = '0 0 0 4px rgba(79, 140, 255, 0.8)';
+    		sprite.el.style.zIndex = '1000';
+    	} else {
+    		sprite.el.style.boxShadow = 'none';
+    		sprite.el.style.zIndex = String(Math.round(sprite.z));
+    	}
     }
 
     function loadPropertiesFromSprite(sprite: ExtendedSprite) {
-        spriteProperties.forEach((prop) => {
-            properties[prop.key] = (sprite as any)[prop.key];
-        });
+    	spriteProperties.forEach((prop) => {
+    		properties[prop.key] = (sprite as any)[prop.key];
+    	});
 
-        // Load fill style
-        if (sprite.fill.type === "color") {
-            fillType = "color";
-            fillColor = sprite.fill.value;
-        } else if (sprite.fill.type === "gradient") {
-            fillType = "gradient";
-            fillGradient = sprite.fill.value;
-        } else if (sprite.fill.type === "image") {
-            fillType = "image";
-            fillImage = sprite.fill.value;
-        }
+    	// Load fill style
+    	if (sprite.fill.type === 'color') {
+    		fillType = 'color';
+    		fillColor = sprite.fill.value;
+    	} else if (sprite.fill.type === 'gradient') {
+    		fillType = 'gradient';
+    		fillGradient = sprite.fill.value;
+    	} else if (sprite.fill.type === 'image') {
+    		fillType = 'image';
+    		fillImage = sprite.fill.value;
+    	}
     }
 
     function addChildSprite() {
-        if (!selectedSprite) return;
-        const newSprite = createSprite(selectedSprite as ExtendedSprite);
-        selectSprite(newSprite as ExtendedSprite);
+    	if (!selectedSprite) return;
+    	const newSprite = createSprite(selectedSprite as ExtendedSprite);
+    	selectSprite(newSprite as ExtendedSprite);
     }
 
     function deleteSprite() {
-        if (!selectedSprite || sprites.length <= 1) return;
+    	if (!selectedSprite || sprites.length <= 1) return;
 
-        // Remove from parent's children array
-        if (selectedSprite.parent) {
-            const parentChildren = selectedSprite.parent.children || [];
-            const index = parentChildren.indexOf(selectedSprite);
-            if (index >= 0) {
-                parentChildren.splice(index, 1);
-            }
-        }
+    	// Remove from parent's children array
+    	if (selectedSprite.parent) {
+    		const parentChildren = selectedSprite.parent.children || [];
+    		const index = parentChildren.indexOf(selectedSprite);
+    		if (index >= 0) {
+    			parentChildren.splice(index, 1);
+    		}
+    	}
 
-        // Remove from DOM
-        if (selectedSprite.el.parentNode) {
-            selectedSprite.el.parentNode.removeChild(selectedSprite.el);
-        }
+    	// Remove from DOM
+    	if (selectedSprite.el.parentNode) {
+    		selectedSprite.el.parentNode.removeChild(selectedSprite.el);
+    	}
 
-        // Remove from sprites array
-        const index = sprites.indexOf(selectedSprite);
-        if (index >= 0) {
-            sprites.splice(index, 1);
-        }
+    	// Remove from sprites array
+    	const index = sprites.indexOf(selectedSprite);
+    	if (index >= 0) {
+    		sprites.splice(index, 1);
+    	}
 
-        // Select the first remaining sprite
-        if (sprites.length > 0) {
-            selectSprite(sprites[0] as ExtendedSprite);
-        } else {
-            selectedSprite = null;
-            initializeProperties();
-        }
+    	// Select the first remaining sprite
+    	if (sprites.length > 0) {
+    		selectSprite(sprites[0] as ExtendedSprite);
+    	} else {
+    		selectedSprite = null;
+    		initializeProperties();
+    	}
     }
 
     onMount(() => {
-        if (!browser) return;
+    	if (!browser) return;
 
-        initializeProperties();
+    	initializeProperties();
 
-        // Create initial sprite
-        const initialSprite = createSprite();
-        selectSprite(initialSprite);
+    	// Create initial sprite
+    	const initialSprite = createSprite();
+    	selectSprite(initialSprite);
     });
 
     onDestroy(() => {
-        stopAnimation();
-        sprites.forEach((sprite) => sprite.remove());
-        sprites = [];
-        selectedSprite = null;
+    	stopAnimation();
+    	sprites.forEach((sprite) => sprite.remove());
+    	sprites = [];
+    	selectedSprite = null;
     });
 </script>
 
@@ -452,7 +452,7 @@
                     <div class="control-group">
                         <label for={prop.key}>{prop.label}</label>
 
-                        {#if prop.type === "range"}
+                        {#if prop.type === 'range'}
                             <div class="range-container">
                                 <input
                                     id={prop.key}
@@ -466,7 +466,7 @@
                                     >{properties[prop.key]}</span
                                 >
                             </div>
-                        {:else if prop.type === "select"}
+                        {:else if prop.type === 'select'}
                             <select
                                 id={prop.key}
                                 bind:value={properties[prop.key]}
@@ -477,7 +477,7 @@
                                     >
                                 {/each}
                             </select>
-                        {:else if prop.type === "text"}
+                        {:else if prop.type === 'text'}
                             <input
                                 id={prop.key}
                                 type="text"
@@ -523,15 +523,15 @@
                         </label>
                     </div>
 
-                    {#if fillType === "color"}
+                    {#if fillType === 'color'}
                         <input type="color" bind:value={fillColor} />
-                    {:else if fillType === "gradient"}
+                    {:else if fillType === 'gradient'}
                         <input
                             type="text"
                             bind:value={fillGradient}
                             placeholder="CSS gradient"
                         />
-                    {:else if fillType === "image"}
+                    {:else if fillType === 'image'}
                         <input
                             type="text"
                             bind:value={fillImage}
@@ -566,7 +566,7 @@
                     <h4>Animation & Controls</h4>
                     <div class="button-group">
                         <button class="main-btn" on:click={toggleAnimation}>
-                            {isAnimating ? "Stop Animation" : "Start Animation"}
+                            {isAnimating ? 'Stop Animation' : 'Start Animation'}
                         </button>
                         <button
                             class="secondary-btn"
@@ -644,7 +644,7 @@
                                         <button
                                             class="sprite-selector"
                                             on:click={() =>
-                                                selectSprite(rootSprite)}
+                                            	selectSprite(rootSprite)}
                                         >
                                             Sprite #{rootSprite.id}
                                         </button>
@@ -659,9 +659,9 @@
                                                         <button
                                                             class="sprite-selector"
                                                             on:click={() =>
-                                                                selectSprite(
-                                                                    childSprite,
-                                                                )}
+                                                            	selectSprite(
+                                                            		childSprite,
+                                                            	)}
                                                         >
                                                             └ Sprite #{childSprite.id}
                                                         </button>

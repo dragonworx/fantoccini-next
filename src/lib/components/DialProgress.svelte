@@ -2,8 +2,8 @@
     // Default size constants
     const DEFAULT_SIZE = 64;
     const DEFAULT_STROKE_WIDTH = 8;
-    const ARC_BG_COLOR = "#184c32";
-    const ARC_FG_COLOR = "#4be06b";
+    const ARC_BG_COLOR = '#184c32';
+    const ARC_FG_COLOR = '#4be06b';
 
     export let min: number = 0;
     export let max: number = 1;
@@ -14,7 +14,7 @@
 
     // Clamp value between min and max
     function clamp(val: number, min: number, max: number) {
-        return Math.max(min, Math.min(max, val));
+    	return Math.max(min, Math.min(max, val));
     }
 
     $: progress = (clamp(currentValue, min, max) - min) / (max - min);

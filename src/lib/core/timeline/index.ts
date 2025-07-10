@@ -40,7 +40,7 @@
  * @see core.timeline.ITimeline - Interface defining the timeline API
  * @see core.timeline.Timeline - Main implementation of the timeline system
  */
-export * from "./observer.js";
-export * from "./keyframe.js";
-export * from "./timeline-object.js";
-export * from "./timeline.js";
+export * from './observer.js';
+export * from './keyframe.js';
+export * from './timeline-object.js';
+export * from './timeline.js';

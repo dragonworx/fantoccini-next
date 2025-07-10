@@ -30,39 +30,39 @@
  * metronome.start();
  */
 
-import { Metronome } from "./metronome";
-import { MetronomeScheduler } from "./metronome_scheduler";
-import { TimeSignature } from "./time_signature";
+import { Metronome } from './metronome';
+import { MetronomeScheduler } from './metronome_scheduler';
+import { TimeSignature } from './time_signature';
 import {
-  Rhythm,
-  quarter,
-  quaver,
-  semiquaver,
-  demisemiquaver,
-  hemidemisemiquaver,
-  semihemidemisemiquaver,
-  demisemihemidemisemiquaver,
-} from "./rhythm";
+	Rhythm,
+	quarter,
+	quaver,
+	semiquaver,
+	demisemiquaver,
+	hemidemisemiquaver,
+	semihemidemisemiquaver,
+	demisemihemidemisemiquaver,
+} from './rhythm';
 
 /**
  * Main exports from the metronome module.
  * These components provide a complete system for musical timing.
  *
  * @memberof metronome
- * @see {@link metronome.Metronome} - The main metronome class
- * @see {@link metronome.TimeSignature} - Musical time signature representation
- * @see {@link metronome.Rhythm} - Defines tempo, time signature, and subdivisions
+ * @see {@link Metronome} - The main metronome class
+ * @see {@link TimeSignature} - Musical time signature representation
+ * @see {@link Rhythm} - Defines tempo, time signature, and subdivisions
  */
 export {
-  Metronome,
-  MetronomeScheduler,
-  TimeSignature,
-  Rhythm,
-  quarter,
-  quaver,
-  semiquaver,
-  demisemiquaver,
-  hemidemisemiquaver,
-  semihemidemisemiquaver,
-  demisemihemidemisemiquaver,
+	Metronome,
+	MetronomeScheduler,
+	TimeSignature,
+	Rhythm,
+	quarter,
+	quaver,
+	semiquaver,
+	demisemiquaver,
+	hemidemisemiquaver,
+	semihemidemisemiquaver,
+	demisemihemidemisemiquaver,
 };

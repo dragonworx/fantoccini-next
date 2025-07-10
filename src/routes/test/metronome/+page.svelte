@@ -1,18 +1,18 @@
 <script lang="ts">
-    import { onMount, onDestroy } from "svelte";
-    import { Metronome } from "$lib/metronome/metronome";
+    import { onMount, onDestroy } from 'svelte';
+    import { Metronome } from '$lib/metronome/metronome';
     import {
-        Rhythm,
-        TimeSignature,
-        quaver,
-        quarter,
-        semiquaver,
-    } from "$lib/metronome";
-    import LaunchAudioDialog from "$lib/components/LaunchAudioDialog.svelte";
-    import { browser } from "$app/environment";
-    import { Pulse } from "$lib/metronome/pulse";
-    import { playPulseSound, unlockAudioContext } from "./utils/audio";
-    import DialProgress from "$lib/components/DialProgress.svelte";
+    	Rhythm,
+    	TimeSignature,
+    	quaver,
+    	quarter,
+    	semiquaver,
+    } from '$lib/metronome';
+    import LaunchAudioDialog from '$lib/components/LaunchAudioDialog.svelte';
+    import { browser } from '$app/environment';
+    import { Pulse } from '$lib/metronome/pulse';
+    import { playPulseSound, unlockAudioContext } from './utils/audio';
+    import DialProgress from '$lib/components/DialProgress.svelte';
 
     // For true measure-based dial progress
     let measureProgress = 0; // 0.0 - 1.0
@@ -26,85 +26,85 @@
 
     // Reactive variable to ensure dials update when measureProgress changes
     $: dialValues = (() => {
-        // Include measureProgress in the reactive dependencies
-        measureProgress;
-        return getDialValues(currentPulse, subDivisions);
+    	// Include measureProgress in the reactive dependencies
+    	measureProgress;
+    	return getDialValues(currentPulse, subDivisions);
     })();
 
     function resetDialMeta(subDivisions: number) {
-        dialMeta = [];
-        for (let i = 0; i < subDivisions; i++) {
-            dialMeta.push({
-                isDownBeat: i === 0 || i % subDivisions === 0,
-            });
-        }
+    	dialMeta = [];
+    	for (let i = 0; i < subDivisions; i++) {
+    		dialMeta.push({
+    			isDownBeat: i === 0 || i % subDivisions === 0,
+    		});
+    	}
     }
 
     function getDialValues(
-        currentPulse: Pulse | null,
-        subDivisions: number,
+    	currentPulse: Pulse | null,
+    	subDivisions: number,
     ): { value: number; isDownBeat: boolean }[] {
-        // Use currentPulse.subdivs for dial count if available, else fallback to UI subDivisions
-        const usedSubdivs = currentPulse?.subdivs ?? subDivisions;
-        const dialCount = usedSubdivs;
-        if (dialMeta.length !== dialCount) {
-            resetDialMeta(dialCount);
-        }
-        if (dialCount < 1) return [];
-        const values: { value: number; isDownBeat: boolean }[] = [];
-        if (!currentPulse) {
-            // Show all dials as empty until first pulse
-            for (let i = 0; i < dialCount; i++)
-                values.push({
-                    value: 0,
-                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
-                });
-            return values;
-        }
-        // If the measure is complete (measureProgress is 1 or more), all dials should be full.
-        if (measureProgress >= 1) {
-            for (let i = 0; i < dialCount; i++)
-                values.push({
-                    value: 1,
-                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
-                });
-            return values;
-        }
-        // measureProgress: 0..1 for the whole measure
-        // Find which dial is active
-        const totalProgress = measureProgress * dialCount;
-        // Add EPSILON to handle floating point inaccuracies near integer boundaries
-        const activeDialIndex = Math.floor(totalProgress + Number.EPSILON);
-        let progressWithinSubdivision = totalProgress - activeDialIndex;
+    	// Use currentPulse.subdivs for dial count if available, else fallback to UI subDivisions
+    	const usedSubdivs = currentPulse?.subdivs ?? subDivisions;
+    	const dialCount = usedSubdivs;
+    	if (dialMeta.length !== dialCount) {
+    		resetDialMeta(dialCount);
+    	}
+    	if (dialCount < 1) return [];
+    	const values: { value: number; isDownBeat: boolean }[] = [];
+    	if (!currentPulse) {
+    		// Show all dials as empty until first pulse
+    		for (let i = 0; i < dialCount; i++)
+    			values.push({
+    				value: 0,
+    				isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+    			});
+    		return values;
+    	}
+    	// If the measure is complete (measureProgress is 1 or more), all dials should be full.
+    	if (measureProgress >= 1) {
+    		for (let i = 0; i < dialCount; i++)
+    			values.push({
+    				value: 1,
+    				isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+    			});
+    		return values;
+    	}
+    	// measureProgress: 0..1 for the whole measure
+    	// Find which dial is active
+    	const totalProgress = measureProgress * dialCount;
+    	// Add EPSILON to handle floating point inaccuracies near integer boundaries
+    	const activeDialIndex = Math.floor(totalProgress + Number.EPSILON);
+    	let progressWithinSubdivision = totalProgress - activeDialIndex;
 
-        // Apply snapping for visual consistency at boundaries
-        const EPSILON = 0.05; // Increased threshold to ensure dials snap to 1 (full) more visibly at segment end
-        if (progressWithinSubdivision >= 1 - EPSILON) {
-            progressWithinSubdivision = 1; // Snap to 1 if very close to end
-        } else if (progressWithinSubdivision <= EPSILON && totalProgress > 0) {
-            // Only snap to 0 if progress has actually started, to avoid initial partial fill
-            progressWithinSubdivision = 0; // Snap to 0 if very close to start
-        }
+    	// Apply snapping for visual consistency at boundaries
+    	const EPSILON = 0.05; // Increased threshold to ensure dials snap to 1 (full) more visibly at segment end
+    	if (progressWithinSubdivision >= 1 - EPSILON) {
+    		progressWithinSubdivision = 1; // Snap to 1 if very close to end
+    	} else if (progressWithinSubdivision <= EPSILON && totalProgress > 0) {
+    		// Only snap to 0 if progress has actually started, to avoid initial partial fill
+    		progressWithinSubdivision = 0; // Snap to 0 if very close to start
+    	}
 
-        for (let i = 0; i < dialCount; i++) {
-            if (i < activeDialIndex) {
-                values.push({
-                    value: 1,
-                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
-                });
-            } else if (i === activeDialIndex) {
-                values.push({
-                    value: progressWithinSubdivision,
-                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
-                });
-            } else {
-                values.push({
-                    value: 0,
-                    isDownBeat: dialMeta[i]?.isDownBeat ?? false,
-                });
-            }
-        }
-        return values;
+    	for (let i = 0; i < dialCount; i++) {
+    		if (i < activeDialIndex) {
+    			values.push({
+    				value: 1,
+    				isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+    			});
+    		} else if (i === activeDialIndex) {
+    			values.push({
+    				value: progressWithinSubdivision,
+    				isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+    			});
+    		} else {
+    			values.push({
+    				value: 0,
+    				isDownBeat: dialMeta[i]?.isDownBeat ?? false,
+    			});
+    		}
+    	}
+    	return values;
     }
 
     // UI state
@@ -113,97 +113,97 @@
     let lower = 4;
     // Use NoteDivision constant for default
     let subDivisions = quaver; // 2
-    let customGroupingStr = "";
-    let variableSubDivisionsStr = "";
+    let customGroupingStr = '';
+    let variableSubDivisionsStr = '';
     let audioOn = true;
     let audioContextInitialized = false;
 
     // Only run the reactive statement when both conditions are met and audio context isn't already initialized
     $: {
-        if (audioOn && browser && audioContextInitialized) {
-            unlockAudioContext();
-        }
+    	if (audioOn && browser && audioContextInitialized) {
+    		unlockAudioContext();
+    	}
     }
 
     // Frame rate presets
     const frameRatePresets = [
-        {
-            label: "1 fps",
-            bpm: 60,
-            upper: 1,
-            lower: 4,
-            subDivisions: 1,
-        },
-        {
-            label: "2 fps",
-            bpm: 120,
-            upper: 2,
-            lower: 4,
-            subDivisions: 1,
-        },
-        {
-            label: "4 fps",
-            bpm: 240,
-            upper: 4,
-            lower: 4,
-            subDivisions: 1,
-        },
-        {
-            label: "8 fps",
-            bpm: 480,
-            upper: 8,
-            lower: 4,
-            subDivisions: 1,
-        },
-        {
-            label: "12 fps",
-            bpm: 720,
-            upper: 12,
-            lower: 4,
-            subDivisions: 1,
-        },
-        {
-            label: "24 fps (Film)",
-            bpm: 1440,
-            upper: 24,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
-        {
-            label: "25 fps (PAL/Video)",
-            bpm: 1500,
-            upper: 25,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
-        {
-            label: "30 fps (NTSC/Video)",
-            bpm: 1800,
-            upper: 30,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
-        {
-            label: "48 fps (High Frame Rate)",
-            bpm: 2880,
-            upper: 48,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
-        {
-            label: "50 fps (PAL Double)",
-            bpm: 3000,
-            upper: 50,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
-        {
-            label: "60 fps (NTSC Double)",
-            bpm: 3600,
-            upper: 60,
-            lower: 4,
-            subDivisions: 1, // Each pulse is a frame
-        },
+    	{
+    		label: '1 fps',
+    		bpm: 60,
+    		upper: 1,
+    		lower: 4,
+    		subDivisions: 1,
+    	},
+    	{
+    		label: '2 fps',
+    		bpm: 120,
+    		upper: 2,
+    		lower: 4,
+    		subDivisions: 1,
+    	},
+    	{
+    		label: '4 fps',
+    		bpm: 240,
+    		upper: 4,
+    		lower: 4,
+    		subDivisions: 1,
+    	},
+    	{
+    		label: '8 fps',
+    		bpm: 480,
+    		upper: 8,
+    		lower: 4,
+    		subDivisions: 1,
+    	},
+    	{
+    		label: '12 fps',
+    		bpm: 720,
+    		upper: 12,
+    		lower: 4,
+    		subDivisions: 1,
+    	},
+    	{
+    		label: '24 fps (Film)',
+    		bpm: 1440,
+    		upper: 24,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
+    	{
+    		label: '25 fps (PAL/Video)',
+    		bpm: 1500,
+    		upper: 25,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
+    	{
+    		label: '30 fps (NTSC/Video)',
+    		bpm: 1800,
+    		upper: 30,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
+    	{
+    		label: '48 fps (High Frame Rate)',
+    		bpm: 2880,
+    		upper: 48,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
+    	{
+    		label: '50 fps (PAL Double)',
+    		bpm: 3000,
+    		upper: 50,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
+    	{
+    		label: '60 fps (NTSC Double)',
+    		bpm: 3600,
+    		upper: 60,
+    		lower: 4,
+    		subDivisions: 1, // Each pulse is a frame
+    	},
     ];
 
     /**
@@ -211,35 +211,35 @@
      * (placed outside <script> for Svelte compatibility)
      */
     // @ts-ignore
-    // eslint-disable-next-line no-unused-vars
+     
 
     /**
      * @param {{label: string, bpm: number, upper: number, lower: number, subDivisions: number}} preset
      */
     function selectPreset(preset: any) {
-        // Stop and dispose previous metronome if running
-        if (metronome) {
-            metronome.stop();
-            metronome.dispose();
-            metronome = null;
-        }
-        bpm = preset.bpm;
-        upper = preset.upper;
-        lower = preset.lower;
-        subDivisions = preset.subDivisions;
-        customGroupingStr = "";
-        variableSubDivisionsStr = "";
-        createMetronome();
-        running = true;
-        paused = false;
+    	// Stop and dispose previous metronome if running
+    	if (metronome) {
+    		metronome.stop();
+    		metronome.dispose();
+    		metronome = null;
+    	}
+    	bpm = preset.bpm;
+    	upper = preset.upper;
+    	lower = preset.lower;
+    	subDivisions = preset.subDivisions;
+    	customGroupingStr = '';
+    	variableSubDivisionsStr = '';
+    	createMetronome();
+    	running = true;
+    	paused = false;
         metronome!.start();
     }
 
     function handlePresetChange(e: Event) {
-        const target = e.target as HTMLSelectElement;
-        if (target && target.selectedIndex > 0) {
-            selectPreset(frameRatePresets[target.selectedIndex - 1]);
-        }
+    	const target = e.target as HTMLSelectElement;
+    	if (target && target.selectedIndex > 0) {
+    		selectPreset(frameRatePresets[target.selectedIndex - 1]);
+    	}
     }
 
     let running = false;
@@ -257,292 +257,292 @@
     }[] = [];
 
     function parseNumberArray(str: string): number[] | undefined {
-        if (!str.trim()) return undefined;
-        try {
-            return str
-                .split(",")
-                .map((s) => parseInt(s.trim(), 10))
-                .filter((n) => !isNaN(n));
-        } catch {
-            return undefined;
-        }
+    	if (!str.trim()) return undefined;
+    	try {
+    		return str
+    			.split(',')
+    			.map((s) => parseInt(s.trim(), 10))
+    			.filter((n) => !isNaN(n));
+    	} catch {
+    		return undefined;
+    	}
     }
 
     function createMetronome() {
-        // Return early if we're not in browser environment or audio context not initialized
-        if (!browser || !audioContextInitialized) return;
+    	// Return early if we're not in browser environment or audio context not initialized
+    	if (!browser || !audioContextInitialized) return;
 
-        const customGrouping = parseNumberArray(customGroupingStr);
-        const variableSubDivisions = parseNumberArray(variableSubDivisionsStr);
+    	const customGrouping = parseNumberArray(customGroupingStr);
+    	const variableSubDivisions = parseNumberArray(variableSubDivisionsStr);
 
-        const settings = new Rhythm({
-            bpm,
-            timeSignature: new TimeSignature(upper, lower),
-            subDivisions,
-            customGrouping:
+    	const settings = new Rhythm({
+    		bpm,
+    		timeSignature: new TimeSignature(upper, lower),
+    		subDivisions,
+    		customGrouping:
                 customGrouping && customGrouping.length > 0
-                    ? customGrouping
-                    : undefined,
-            variableSubDivisions:
+                	? customGrouping
+                	: undefined,
+    		variableSubDivisions:
                 variableSubDivisions && variableSubDivisions.length > 0
-                    ? variableSubDivisions
-                    : undefined,
-        });
+                	? variableSubDivisions
+                	: undefined,
+    	});
 
-        if (metronome) {
-            metronome.dispose();
-        }
-        metronome = new Metronome(settings);
+    	if (metronome) {
+    		metronome.dispose();
+    	}
+    	metronome = new Metronome(settings);
 
-        // Set up pulseSquares for the measure
-        const totalPulses = settings.pulsesPerMeasure;
-        pulseSquares = Array.from({ length: totalPulses }, (_, i) => ({
-            pulse: i + 1,
-            colorClass: "",
-            lit: false,
-            fading: false,
-        }));
-        currentPulse = null;
+    	// Set up pulseSquares for the measure
+    	const totalPulses = settings.pulsesPerMeasure;
+    	pulseSquares = Array.from({ length: totalPulses }, (_, i) => ({
+    		pulse: i + 1,
+    		colorClass: '',
+    		lit: false,
+    		fading: false,
+    	}));
+    	currentPulse = null;
 
-        // Reset dialMeta for the new measure
-        resetDialMeta(settings.subDivisions);
+    	// Reset dialMeta for the new measure
+    	resetDialMeta(settings.subDivisions);
 
-        function lightUpPulse(idx: number, colorClass: string) {
-            // Defensive: only update if idx is in bounds
-            if (!pulseSquares[idx]) return;
-            pulseSquares[idx].colorClass = colorClass;
-            pulseSquares[idx].lit = true;
-            pulseSquares[idx].fading = false;
-            pulseSquares = [...pulseSquares]; // trigger reactivity
+    	function lightUpPulse(idx: number, colorClass: string) {
+    		// Defensive: only update if idx is in bounds
+    		if (!pulseSquares[idx]) return;
+    		pulseSquares[idx].colorClass = colorClass;
+    		pulseSquares[idx].lit = true;
+    		pulseSquares[idx].fading = false;
+    		pulseSquares = [...pulseSquares]; // trigger reactivity
 
-            setTimeout(() => {
-                if (!pulseSquares[idx]) return;
-                pulseSquares[idx].lit = false;
-                pulseSquares[idx].fading = true;
-                pulseSquares = [...pulseSquares];
-                setTimeout(() => {
-                    if (!pulseSquares[idx]) return;
-                    pulseSquares[idx].colorClass = "";
-                    pulseSquares[idx].fading = false;
-                    pulseSquares = [...pulseSquares];
-                }, 100);
-            }, 180);
-        }
+    		setTimeout(() => {
+    			if (!pulseSquares[idx]) return;
+    			pulseSquares[idx].lit = false;
+    			pulseSquares[idx].fading = true;
+    			pulseSquares = [...pulseSquares];
+    			setTimeout(() => {
+    				if (!pulseSquares[idx]) return;
+    				pulseSquares[idx].colorClass = '';
+    				pulseSquares[idx].fading = false;
+    				pulseSquares = [...pulseSquares];
+    			}, 100);
+    		}, 180);
+    	}
 
-        metronome.onPulse((p: Pulse) => {
-            currentPulse = p;
-            pulses = [...pulses, p];
-            let colorClass = "white";
-            if (p.pulse === 1 && p.beat === 1) colorClass = "green";
-            else if (p.isDownBeat) colorClass = "blue";
-            lightUpPulse(p.pulse - 1, colorClass);
+    	metronome.onPulse((p: Pulse) => {
+    		currentPulse = p;
+    		pulses = [...pulses, p];
+    		let colorClass = 'white';
+    		if (p.pulse === 1 && p.beat === 1) colorClass = 'green';
+    		else if (p.isDownBeat) colorClass = 'blue';
+    		lightUpPulse(p.pulse - 1, colorClass);
 
-            // Play sound for this pulse if audio is enabled, in browser, and audio context is initialized
-            if (audioOn && browser && audioContextInitialized) {
-                try {
-                    playPulseSound({
-                        isNewMeasure: p.pulse === 1 && p.beat === 1,
-                        isDownBeat: p.isDownBeat,
-                    });
-                } catch (e) {
-                    console.error("Audio playback failed:", e);
-                    // Try unlocking the audio context if there's an error
-                    unlockAudioContext();
-                }
-            }
+    		// Play sound for this pulse if audio is enabled, in browser, and audio context is initialized
+    		if (audioOn && browser && audioContextInitialized) {
+    			try {
+    				playPulseSound({
+    					isNewMeasure: p.pulse === 1 && p.beat === 1,
+    					isDownBeat: p.isDownBeat,
+    				});
+    			} catch (e) {
+    				console.error('Audio playback failed:', e);
+    				// Try unlocking the audio context if there's an error
+    				unlockAudioContext();
+    			}
+    		}
 
-            // --- True measure-based dial progress timing ---
-            // Duration of a measure in ms: beats per measure * ms per beat
-            measureDuration = (60000 / bpm) * upper;
-            measureStartTime = performance.now();
-            measureProgress = 0;
-            // Reset dialMeta at the start of each measure
-            resetDialMeta(p.subdivs || settings.subDivisions);
+    		// --- True measure-based dial progress timing ---
+    		// Duration of a measure in ms: beats per measure * ms per beat
+    		measureDuration = (60000 / bpm) * upper;
+    		measureStartTime = performance.now();
+    		measureProgress = 0;
+    		// Reset dialMeta at the start of each measure
+    		resetDialMeta(p.subdivs || settings.subDivisions);
 
-            // Use the animationFrameId to request animation instead of calling animateProgress
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            animationFrameId = requestAnimationFrame(function animateFrame() {
-                if (!running || !currentPulse) return;
-                const now = performance.now();
-                if (measureDuration > 0) {
-                    // Use pulse index as "current" instead of "previous" for base progress
-                    // This fixes the lag by a segment
-                    const base = currentPulse.pulse / currentPulse.pulses;
-                    // Interpolate between previous and current pulse's complete value
-                    // but anchor to the "current" pulse position
-                    measureProgress = Math.min(
-                        1,
-                        Math.max(
-                            0,
-                            (now - measureStartTime) / measureDuration,
-                            base,
-                        ),
-                    );
-                    // Force update to trigger reactivity
-                    measureProgress = measureProgress;
-                } else {
-                    measureProgress = currentPulse.complete;
-                }
-                animationFrameId = requestAnimationFrame(animateFrame);
-            });
-        });
+    		// Use the animationFrameId to request animation instead of calling animateProgress
+    		if (animationFrameId) {
+    			cancelAnimationFrame(animationFrameId);
+    		}
+    		animationFrameId = requestAnimationFrame(function animateFrame() {
+    			if (!running || !currentPulse) return;
+    			const now = performance.now();
+    			if (measureDuration > 0) {
+    				// Use pulse index as "current" instead of "previous" for base progress
+    				// This fixes the lag by a segment
+    				const base = currentPulse.pulse / currentPulse.pulses;
+    				// Interpolate between previous and current pulse's complete value
+    				// but anchor to the "current" pulse position
+    				measureProgress = Math.min(
+    					1,
+    					Math.max(
+    						0,
+    						(now - measureStartTime) / measureDuration,
+    						base,
+    					),
+    				);
+    				// Force update to trigger reactivity
+    				measureProgress = measureProgress;
+    			} else {
+    				measureProgress = currentPulse.complete;
+    			}
+    			animationFrameId = requestAnimationFrame(animateFrame);
+    		});
+    	});
 
-        metronome.onEvent((event) => {
-            if (event === "stop") {
-                measureProgress = 0;
-                currentPulse = null;
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
-            }
-        });
+    	metronome.onEvent((event) => {
+    		if (event === 'stop') {
+    			measureProgress = 0;
+    			currentPulse = null;
+    			if (animationFrameId) {
+    				cancelAnimationFrame(animationFrameId);
+    				animationFrameId = null;
+    			}
+    		}
+    	});
     }
 
     function toggleMetronome() {
-        if (running) {
-            metronome?.stop();
-            running = false;
-            paused = false;
-            // Reset visualization
-            pulseSquares = pulseSquares.map((sq) => ({
-                ...sq,
-                colorClass: "",
-                lit: false,
-                fading: false,
-            }));
-            currentPulse = null;
-        } else {
-            createMetronome(); // Always create a new instance to ensure fresh audio state
-            metronome?.start();
-            running = true;
-            paused = false;
-        }
+    	if (running) {
+    		metronome?.stop();
+    		running = false;
+    		paused = false;
+    		// Reset visualization
+    		pulseSquares = pulseSquares.map((sq) => ({
+    			...sq,
+    			colorClass: '',
+    			lit: false,
+    			fading: false,
+    		}));
+    		currentPulse = null;
+    	} else {
+    		createMetronome(); // Always create a new instance to ensure fresh audio state
+    		metronome?.start();
+    		running = true;
+    		paused = false;
+    	}
     }
 
     function pauseMetronome() {
-        if (!browser) return;
+    	if (!browser) return;
 
-        if (running && !paused) {
-            metronome?.pause();
-            paused = true;
-        }
+    	if (running && !paused) {
+    		metronome?.pause();
+    		paused = true;
+    	}
     }
 
     function resumeMetronome() {
-        if (!browser) return;
+    	if (!browser) return;
 
-        if (running && paused) {
-            metronome?.resume();
-            paused = false;
-        }
+    	if (running && paused) {
+    		metronome?.resume();
+    		paused = false;
+    	}
     }
 
     function updateMetronome() {
-        // Check for browser environment, initialized audio context, and metronome
-        if (!browser || !audioContextInitialized || !metronome) {
-            return;
-        }
-        const customGrouping = parseNumberArray(customGroupingStr);
-        const variableSubDivisions = parseNumberArray(variableSubDivisionsStr);
+    	// Check for browser environment, initialized audio context, and metronome
+    	if (!browser || !audioContextInitialized || !metronome) {
+    		return;
+    	}
+    	const customGrouping = parseNumberArray(customGroupingStr);
+    	const variableSubDivisions = parseNumberArray(variableSubDivisionsStr);
 
-        const settings = new Rhythm({
-            bpm,
-            timeSignature: new TimeSignature(upper, lower),
-            subDivisions,
-            customGrouping:
+    	const settings = new Rhythm({
+    		bpm,
+    		timeSignature: new TimeSignature(upper, lower),
+    		subDivisions,
+    		customGrouping:
                 customGrouping && customGrouping.length > 0
-                    ? customGrouping
-                    : undefined,
-            variableSubDivisions:
+                	? customGrouping
+                	: undefined,
+    		variableSubDivisions:
                 variableSubDivisions && variableSubDivisions.length > 0
-                    ? variableSubDivisions
-                    : undefined,
-        });
+                	? variableSubDivisions
+                	: undefined,
+    	});
 
-        if (running) {
-            metronome.update(settings);
-            pulses = [];
-            currentPulse = null;
-        } else {
-            // If not running, just update the settings for next start
-            metronome.dispose();
-            metronome = new Metronome(settings);
-        }
+    	if (running) {
+    		metronome.update(settings);
+    		pulses = [];
+    		currentPulse = null;
+    	} else {
+    		// If not running, just update the settings for next start
+    		metronome.dispose();
+    		metronome = new Metronome(settings);
+    	}
 
-        // Always update pulseSquares when subdivisions change
-        const totalPulses = settings.pulsesPerMeasure;
-        pulseSquares = Array.from({ length: totalPulses }, (_, i) => ({
-            pulse: i + 1,
-            colorClass: "",
-            lit: false,
-            fading: false,
-        }));
+    	// Always update pulseSquares when subdivisions change
+    	const totalPulses = settings.pulsesPerMeasure;
+    	pulseSquares = Array.from({ length: totalPulses }, (_, i) => ({
+    		pulse: i + 1,
+    		colorClass: '',
+    		lit: false,
+    		fading: false,
+    	}));
 
-        // Reset dialMeta to match current subdivision count
-        resetDialMeta(subDivisions);
+    	// Reset dialMeta to match current subdivision count
+    	resetDialMeta(subDivisions);
     }
 
     onMount(() => {
-        // Browser environment check
-        if (!browser) return;
+    	// Browser environment check
+    	if (!browser) return;
 
-        // We'll set up event listeners, but won't initialize audio context yet
-        // The audio context will be initialized when the user clicks the Launch button
-        const unlock = () => {
-            if (audioContextInitialized) {
-                unlockAudioContext();
-                window.removeEventListener("pointerdown", unlock);
-                window.removeEventListener("keydown", unlock);
-            }
-        };
+    	// We'll set up event listeners, but won't initialize audio context yet
+    	// The audio context will be initialized when the user clicks the Launch button
+    	const unlock = () => {
+    		if (audioContextInitialized) {
+    			unlockAudioContext();
+    			window.removeEventListener('pointerdown', unlock);
+    			window.removeEventListener('keydown', unlock);
+    		}
+    	};
 
-        window.addEventListener("pointerdown", unlock);
-        window.addEventListener("keydown", unlock);
+    	window.addEventListener('pointerdown', unlock);
+    	window.addEventListener('keydown', unlock);
 
-        // Don't create metronome here - wait for dialog dismissal
+    	// Don't create metronome here - wait for dialog dismissal
 
-        // Animation loop for true measure-based dial progress
-        function animateProgress() {
-            if (!running || !currentPulse) return;
-            const now = performance.now();
-            if (measureDuration > 0) {
-                // Use pulse index as "current" instead of "previous" for base progress
-                // This fixes the lag by a segment
-                const base = currentPulse.pulse / currentPulse.pulses;
-                // Calculate progress based on elapsed time
-                measureProgress = Math.min(
-                    1,
-                    Math.max(
-                        0,
-                        (now - measureStartTime) / measureDuration,
-                        base,
-                    ),
-                );
-            } else {
-                measureProgress = currentPulse.complete;
-            }
-            // Force Svelte to update by assigning the value
-            measureProgress = measureProgress;
-            animationFrameId = requestAnimationFrame(animateProgress);
-        }
+    	// Animation loop for true measure-based dial progress
+    	function animateProgress() {
+    		if (!running || !currentPulse) return;
+    		const now = performance.now();
+    		if (measureDuration > 0) {
+    			// Use pulse index as "current" instead of "previous" for base progress
+    			// This fixes the lag by a segment
+    			const base = currentPulse.pulse / currentPulse.pulses;
+    			// Calculate progress based on elapsed time
+    			measureProgress = Math.min(
+    				1,
+    				Math.max(
+    					0,
+    					(now - measureStartTime) / measureDuration,
+    					base,
+    				),
+    			);
+    		} else {
+    			measureProgress = currentPulse.complete;
+    		}
+    		// Force Svelte to update by assigning the value
+    		measureProgress = measureProgress;
+    		animationFrameId = requestAnimationFrame(animateProgress);
+    	}
     });
 
     onDestroy(() => {
-        if (browser && metronome) {
-            metronome.dispose();
-        }
+    	if (browser && metronome) {
+    		metronome.dispose();
+    	}
     });
 
     // Handle audio context initialization when the dialog is dismissed
     function handleAudioLaunch() {
-        if (browser) {
-            audioContextInitialized = true;
-            unlockAudioContext();
-            createMetronome(); // Create metronome only after audio context is ready
-        }
+    	if (browser) {
+    		audioContextInitialized = true;
+    		unlockAudioContext();
+    		createMetronome(); // Create metronome only after audio context is ready
+    	}
     }
 </script>
 
@@ -656,14 +656,14 @@
         <div class="button-row">
             <div class="button-group">
                 <button class="main-btn" on:click={toggleMetronome}>
-                    {running ? "Stop" : "Start"}
+                    {running ? 'Stop' : 'Start'}
                 </button>
                 <button
                     class="main-btn"
                     on:click={paused ? resumeMetronome : pauseMetronome}
                     disabled={!running}
                 >
-                    {paused ? "Resume" : "Pause"}
+                    {paused ? 'Resume' : 'Pause'}
                 </button>
             </div>
         </div>
@@ -673,8 +673,8 @@
         {#each pulseSquares as sq, i}
             <div
                 class="pulse-square {sq.colorClass} {sq.lit
-                    ? 'lit'
-                    : ''} {sq.fading ? 'fading' : ''}"
+                	? 'lit'
+                	: ''} {sq.fading ? 'fading' : ''}"
                 title="Pulse {sq.pulse}"
             >
                 {sq.pulse}
@@ -693,7 +693,7 @@
                 max={1}
                 currentValue={dial.value}
                 size={48}
-                color={dial.value >= 1 ? "#1ed760" : "#fff"}
+                color={dial.value >= 1 ? '#1ed760' : '#fff'}
             />
         {/each}
     </div>
@@ -715,7 +715,7 @@
                 &nbsp;|&nbsp;
                 <strong>isDownBeat:</strong>
                 <span class="fixed-yesno"
-                    >{currentPulse?.isDownBeat ? "Yes" : "No"}</span
+                    >{currentPulse?.isDownBeat ? 'Yes' : 'No'}</span
                 >
             </div>
         </div>

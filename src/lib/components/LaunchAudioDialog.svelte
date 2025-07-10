@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount } from 'svelte';
     let dialogEl: HTMLDialogElement | null = null;
     let launched = false;
 
@@ -8,15 +8,15 @@
 
     // Show dialog on mount if not launched
     onMount(() => {
-        if (!launched && dialogEl) {
-            dialogEl.showModal();
-        }
+    	if (!launched && dialogEl) {
+    		dialogEl.showModal();
+    	}
     });
 
     function handleLaunch() {
-        launched = true;
-        if (dialogEl) dialogEl.close();
-        if (onLaunch) onLaunch();
+    	launched = true;
+    	if (dialogEl) dialogEl.close();
+    	if (onLaunch) onLaunch();
     }
 </script>
 

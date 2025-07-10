@@ -21,8 +21,8 @@
  * timeline.addObject(object);
  */
 
-import { IObserver } from "./observer.js";
-import { IAnimatableProperty, AnimatableProperty } from "./keyframe.js";
+import { IObserver } from './observer.js';
+import { IAnimatableProperty, AnimatableProperty } from './keyframe.js';
 
 /**
  * An object with animatable properties that can be placed on a timeline.
@@ -58,9 +58,9 @@ export interface ITimelineObject extends IObserver {
    * Each property name maps to an IAnimatableProperty that manages keyframes
    * and interpolation for that property.
    *
-   * @type {Map<string, IAnimatableProperty<any>>}
+   * @type {Map<string, IAnimatableProperty<unknown>>}
    */
-  readonly properties: Map<string, IAnimatableProperty<any>>;
+  readonly properties: Map<string, IAnimatableProperty<unknown>>;
 
   /**
    * Receives time updates from the parent timeline.
@@ -110,9 +110,9 @@ export interface ITimelineObject extends IObserver {
  * }
  */
 export abstract class TimelineObject implements ITimelineObject {
-  public readonly properties: Map<string, IAnimatableProperty<any>> = new Map();
+	public readonly properties: Map<string, IAnimatableProperty<unknown>> = new Map();
 
-  /**
+	/**
    * Adds an animatable property to this object.
    * Creates a new AnimatableProperty with the specified default value and
    * registers it under the given name.
@@ -130,13 +130,13 @@ export abstract class TimelineObject implements ITimelineObject {
    * xProperty.addKeyframe(0, 0);
    * xProperty.addKeyframe(1, 100);
    */
-  addProperty<T>(name: string, defaultValue: T): AnimatableProperty<T> {
-    const property = new AnimatableProperty(defaultValue);
-    this.properties.set(name, property);
-    return property;
-  }
+	public addProperty<T>(name: string, defaultValue: T): AnimatableProperty<T> {
+		const property = new AnimatableProperty(defaultValue);
+		this.properties.set(name, property);
+		return property;
+	}
 
-  /**
+	/**
    * Gets an animatable property by name.
    * Retrieves a previously registered property for adding keyframes or
    * configuring interpolation.
@@ -153,11 +153,11 @@ export abstract class TimelineObject implements ITimelineObject {
    *   xProperty.addKeyframe(1, 100);
    * }
    */
-  getProperty<T>(name: string): IAnimatableProperty<T> | undefined {
-    return this.properties.get(name) as IAnimatableProperty<T> | undefined;
-  }
+	public getProperty<T>(name: string): IAnimatableProperty<T> | undefined {
+		return this.properties.get(name) as IAnimatableProperty<T> | undefined;
+	}
 
-  /**
+	/**
    * Receives time updates from the parent timeline.
    * Resolves all property values at the given time and calls applyState to update the target.
    * This method is automatically called by the parent timeline during its update cycle.
@@ -169,17 +169,17 @@ export abstract class TimelineObject implements ITimelineObject {
    * // This happens automatically when the parent timeline updates:
    * timelineObject.update(1.5); // Update all properties to their values at 1.5 seconds
    */
-  update(localTime: number): void {
-    const resolvedValues: Map<string, any> = new Map();
+	public update(localTime: number): void {
+		const resolvedValues: Map<string, unknown> = new Map();
 
-    // Resolve all property values at the current time
-    for (const [name, property] of this.properties) {
-      resolvedValues.set(name, property.resolveValue(localTime));
-    }
+		// Resolve all property values at the current time
+		for (const [name, property] of this.properties) {
+			resolvedValues.set(name, property.resolveValue(localTime));
+		}
 
-    // Apply the resolved values to the target
-    this.applyState(resolvedValues);
-  }
+		// Apply the resolved values to the target
+		this.applyState(resolvedValues);
+	}
 
   /**
    * Abstract method that subclasses must implement to apply resolved values
@@ -199,7 +199,7 @@ export abstract class TimelineObject implements ITimelineObject {
    *   this.element.style.transform = `translate(${x}px, ${y}px)`;
    * }
    */
-  protected abstract applyState(values: Map<string, any>): void;
+  protected abstract applyState(values: Map<string, unknown>): void;
 }
 
 /**
@@ -232,32 +232,32 @@ export abstract class TimelineObject implements ITimelineObject {
  * timeline.addObject(domObject);
  */
 export class DOMTimelineObject extends TimelineObject {
-  constructor(private element: HTMLElement) {
-    super();
+	public constructor(private element: HTMLElement) {
+		super();
 
-    // Add common CSS properties
-    this.addProperty("x", 0);
-    this.addProperty("y", 0);
-    this.addProperty("rotation", 0);
-    this.addProperty("scaleX", 1);
-    this.addProperty("scaleY", 1);
-    this.addProperty("opacity", 1);
-  }
+		// Add common CSS properties
+		this.addProperty('x', 0);
+		this.addProperty('y', 0);
+		this.addProperty('rotation', 0);
+		this.addProperty('scaleX', 1);
+		this.addProperty('scaleY', 1);
+		this.addProperty('opacity', 1);
+	}
 
-  protected applyState(values: Map<string, any>): void {
-    const x = values.get("x") || 0;
-    const y = values.get("y") || 0;
-    const rotation = values.get("rotation") || 0;
-    const scaleX = values.get("scaleX") || 1;
-    const scaleY = values.get("scaleY") || 1;
-    const opacity = values.get("opacity") || 1;
+	protected applyState(values: Map<string, unknown>): void {
+		const x = values.get('x') || 0;
+		const y = values.get('y') || 0;
+		const rotation = values.get('rotation') || 0;
+		const scaleX = values.get('scaleX') || 1;
+		const scaleY = values.get('scaleY') || 1;
+		const opacity = values.get('opacity') || 1;
 
-    // Apply transform
-    this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+		// Apply transform
+		this.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
 
-    // Apply opacity
-    this.element.style.opacity = opacity.toString();
-  }
+		// Apply opacity
+		this.element.style.opacity = opacity.toString();
+	}
 }
 
 /**
@@ -287,9 +287,9 @@ export class DOMTimelineObject extends TimelineObject {
  * console.log(testObject.getCurrentValue("value")); // 50
  */
 export class GenericTimelineObject extends TimelineObject {
-  private currentValues: Map<string, any> = new Map();
+	private currentValues: Map<string, unknown> = new Map();
 
-  /**
+	/**
    * Gets the current resolved value for a property.
    *
    * @template T - The type of the property value
@@ -302,11 +302,11 @@ export class GenericTimelineObject extends TimelineObject {
    * object.update(1.0);
    * const currentX = object.getCurrentValue<number>("x");
    */
-  getCurrentValue<T>(propertyName: string): T | undefined {
-    return this.currentValues.get(propertyName);
-  }
+	public getCurrentValue<T>(propertyName: string): T | undefined {
+		return this.currentValues.get(propertyName) as T | undefined;
+	}
 
-  /**
+	/**
    * Gets all current resolved values.
    * Returns a new Map containing all property values at the current time.
    *
@@ -321,14 +321,14 @@ export class GenericTimelineObject extends TimelineObject {
    * const allValues = object.getCurrentValues();
    * console.log(allValues.get("x"), allValues.get("y"));
    */
-  getCurrentValues(): Map<string, any> {
-    return new Map(this.currentValues);
-  }
+	public getCurrentValues(): Map<string, unknown> {
+		return new Map(this.currentValues);
+	}
 
-  protected applyState(values: Map<string, any>): void {
-    this.currentValues.clear();
-    for (const [name, value] of values) {
-      this.currentValues.set(name, value);
-    }
-  }
+	protected applyState(values: Map<string, unknown>): void {
+		this.currentValues.clear();
+		for (const [name, value] of values) {
+			this.currentValues.set(name, value);
+		}
+	}
 }

@@ -1,4 +1,4 @@
-import { TimeSignature } from "./time_signature";
+import { TimeSignature } from './time_signature';
 
 /**
  * Valid note division values for subdivisions in a rhythm.
@@ -77,26 +77,26 @@ export const demisemihemidemisemiquaver: NoteDivision = 64;
  * @see metronome.TimeSignature
  */
 export class Rhythm {
-  /**
+	/**
    * Tempo in beats per minute.
    * @type {number}
    */
-  bpm: number;
+	public bpm: number;
 
-  /**
+	/**
    * Time signature that defines the meter of the rhythm.
    * @type {TimeSignature}
    */
-  timeSignature: TimeSignature;
+	public timeSignature: TimeSignature;
 
-  /**
+	/**
    * Number of subdivisions per beat.
    * For example, 1 = quarter notes, 2 = eighth notes, 4 = sixteenth notes.
    * @type {number}
    */
-  subDivisions: number;
+	public subDivisions: number;
 
-  /**
+	/**
    * Optional custom grouping pattern for irregular meters.
    * For example, [3, 2, 2] would group a 7/8 time signature into a 3+2+2 pattern.
    * @type {number[]}
@@ -104,9 +104,9 @@ export class Rhythm {
    * // 7/8 time signature with grouping of 3+2+2
    * customGrouping: [3, 2, 2]
    */
-  customGrouping?: number[];
+	public customGrouping?: number[];
 
-  /**
+	/**
    * Optional variable subdivisions for each beat in a measure.
    * Allows for polyrhythms or mixed subdivision patterns.
    * @type {number[]}
@@ -114,9 +114,9 @@ export class Rhythm {
    * // A measure where first beat has duplets, second has triplets, third has duplets
    * variableSubDivisions: [2, 3, 2]
    */
-  variableSubDivisions?: number[];
+	public variableSubDivisions?: number[];
 
-  /**
+	/**
    * Creates a new Rhythm instance.
    *
    * @param {Object} options - Configuration options for the rhythm
@@ -134,21 +134,21 @@ export class Rhythm {
    *   subDivisions: 2  // eighth notes
    * });
    */
-  constructor(options: {
+	public constructor(options: {
     bpm: number;
     timeSignature?: TimeSignature;
     subDivisions?: number;
     customGrouping?: number[];
     variableSubDivisions?: number[];
   }) {
-    this.bpm = options.bpm;
-    this.timeSignature = options.timeSignature ?? TimeSignature.four_four;
-    this.subDivisions = options.subDivisions ?? 1;
-    this.customGrouping = options.customGrouping;
-    this.variableSubDivisions = options.variableSubDivisions;
-  }
+		this.bpm = options.bpm;
+		this.timeSignature = options.timeSignature ?? TimeSignature.four_four;
+		this.subDivisions = options.subDivisions ?? 1;
+		this.customGrouping = options.customGrouping;
+		this.variableSubDivisions = options.variableSubDivisions;
+	}
 
-  /**
+	/**
    * Calculates the total number of pulses per measure based on time signature,
    * subdivisions, and any custom groupings or variable subdivisions.
    *
@@ -162,14 +162,14 @@ export class Rhythm {
    * // For a 7/8 rhythm with custom grouping [3,2,2] and sixteenth note subdivisions
    * // pulsesPerMeasure = (3+2+2) beats × 4 subdivisions = 28 pulses
    */
-  get pulsesPerMeasure(): number {
-    if (this.customGrouping) {
-      const groupSum = this.customGrouping.reduce((a, b) => a + b, 0);
-      const subdivSum = this.variableSubDivisions
-        ? this.variableSubDivisions.reduce((a, b) => a + b, 0)
-        : this.subDivisions;
-      return groupSum * subdivSum;
-    }
-    return this.timeSignature.upper * this.subDivisions;
-  }
+	public get pulsesPerMeasure(): number {
+		if (this.customGrouping) {
+			const groupSum = this.customGrouping.reduce((a, b) => a + b, 0);
+			const subdivSum = this.variableSubDivisions
+				? this.variableSubDivisions.reduce((a, b) => a + b, 0)
+				: this.subDivisions;
+			return groupSum * subdivSum;
+		}
+		return this.timeSignature.upper * this.subDivisions;
+	}
 }

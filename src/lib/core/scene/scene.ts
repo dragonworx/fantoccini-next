@@ -1,4 +1,4 @@
-import { Sprite } from "../sprite";
+import { Sprite } from '../sprite';
 
 /**
  * @namespace core
@@ -44,25 +44,25 @@ export interface SceneOptions {
  * // Start the scene's animation loop
  * scene.start();
  *
- * @see core.Sprite
+ * @see Sprite
  */
 export class Scene {
-  /**
+	/**
    * The root sprite that contains all other elements in the scene.
    * @type {Sprite}
    */
-  root: Sprite;
+	public root: Sprite;
 
-  /** Target frame rate in frames per second */
-  private _frameRate: number;
-  /** Whether the animation loop is currently running */
-  private _running: boolean = false;
-  /** Timestamp of the last frame render */
-  private _lastFrameTime: number = 0;
-  /** Current animation frame request ID */
-  private _frameRequest: number | null = null;
+	/** Target frame rate in frames per second */
+	private _frameRate: number;
+	/** Whether the animation loop is currently running */
+	private _running: boolean = false;
+	/** Timestamp of the last frame render */
+	private _lastFrameTime: number = 0;
+	/** Current animation frame request ID */
+	private _frameRequest: number | null = null;
 
-  /**
+	/**
    * Creates a new Scene instance.
    *
    * @param {SceneOptions} [options={}] - Configuration options for the scene
@@ -77,31 +77,31 @@ export class Scene {
    *   root: new Sprite({ fill: { type: "color", value: "#000" } })
    * });
    */
-  constructor(options: SceneOptions = {}) {
-    this.root = options.root || new Sprite();
-    this._frameRate = options.frameRate ?? 60;
-  }
+	public constructor(options: SceneOptions = {}) {
+		this.root = options.root || new Sprite();
+		this._frameRate = options.frameRate ?? 60;
+	}
 
-  /**
+	/**
    * Gets the current target frame rate in frames per second.
    *
    * @returns {number} Current frame rate
    */
-  get frameRate() {
-    return this._frameRate;
-  }
+	public get frameRate(): number {
+		return this._frameRate;
+	}
 
-  /**
+	/**
    * Sets the target frame rate in frames per second.
    * The value will be clamped to a minimum of 1fps.
    *
    * @param {number} rate - New frame rate to set
    */
-  set frameRate(rate: number) {
-    this._frameRate = Math.max(1, rate);
-  }
+	public set frameRate(rate: number) {
+		this._frameRate = Math.max(1, rate);
+	}
 
-  /**
+	/**
    * Starts the scene's animation loop.
    * If the scene is already running, this method has no effect.
    *
@@ -111,15 +111,15 @@ export class Scene {
    * const scene = new Scene();
    * scene.start(); // Begin animation loop
    */
-  start() {
-    if (!this._running) {
-      this._running = true;
-      this._lastFrameTime = performance.now();
-      this._frameRequest = requestAnimationFrame(this._frameLoop);
-    }
-  }
+	public start(): void {
+		if (!this._running) {
+			this._running = true;
+			this._lastFrameTime = performance.now();
+			this._frameRequest = requestAnimationFrame(this._frameLoop);
+		}
+	}
 
-  /**
+	/**
    * Stops the scene's animation loop.
    * Cancels any pending animation frame requests.
    *
@@ -131,32 +131,34 @@ export class Scene {
    * // Later...
    * scene.stop(); // Halt animation loop
    */
-  stop() {
-    this._running = false;
-    if (this._frameRequest !== null) {
-      cancelAnimationFrame(this._frameRequest);
-      this._frameRequest = null;
-    }
-  }
+	public stop(): void {
+		this._running = false;
+		if (this._frameRequest !== null) {
+			cancelAnimationFrame(this._frameRequest);
+			this._frameRequest = null;
+		}
+	}
 
-  /**
+	/**
    * Animation frame callback that manages the timing of updates.
    * Ensures updates run at the target frame rate by throttling calls.
    *
    * @param {number} now - Current timestamp from requestAnimationFrame
    * @returns {void}
    */
-  private _frameLoop = (now: number) => {
-    if (!this._running) return;
-    const minFrameTime = 1000 / this._frameRate;
-    if (now - this._lastFrameTime >= minFrameTime) {
-      this._lastFrameTime = now;
-      this.update();
-    }
-    this._frameRequest = requestAnimationFrame(this._frameLoop);
-  };
+	private _frameLoop = (now: number): void => {
+		if (!this._running) {
+			return;
+		}
+		const minFrameTime = 1000 / this._frameRate;
+		if (now - this._lastFrameTime >= minFrameTime) {
+			this._lastFrameTime = now;
+			this.update();
+		}
+		this._frameRequest = requestAnimationFrame(this._frameLoop);
+	};
 
-  /**
+	/**
    * Recursively updates all dirty sprites in the scene graph.
    * This method is called automatically by the animation loop,
    * but can also be called manually for immediate updates.
@@ -167,28 +169,28 @@ export class Scene {
    * // Force an immediate update of all sprites
    * scene.update();
    */
-  update() {
-    this._updateSpriteRecursive(this.root);
-  }
+	public update(): void {
+		this._updateSpriteRecursive(this.root);
+	}
 
-  /**
+	/**
    * Recursively processes sprites, updating their styles if dirty.
    * Traverses the sprite hierarchy depth-first.
    *
    * @param {Sprite} sprite - The sprite to update, along with its descendants
    * @returns {void}
    */
-  private _updateSpriteRecursive(sprite: Sprite) {
-    if (sprite.dirty) {
-      sprite.updateStyle();
-    }
-    // If Sprite supports children, walk them here.
-    // For now, check if sprite.children exists and is iterable.
-    const children = (sprite as any).children;
-    if (Array.isArray(children)) {
-      for (const child of children) {
-        this._updateSpriteRecursive(child);
-      }
-    }
-  }
+	private _updateSpriteRecursive(sprite: Sprite): void {
+		if (sprite.dirty) {
+			sprite.updateStyle();
+		}
+		// If Sprite supports children, walk them here.
+		// For now, check if sprite.children exists and is iterable.
+		const children = sprite.children;
+		if (Array.isArray(children)) {
+			for (const child of children) {
+				this._updateSpriteRecursive(child);
+			}
+		}
+	}
 }

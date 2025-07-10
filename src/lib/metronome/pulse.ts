@@ -22,53 +22,53 @@
  * @see metronome.Metronome#onPulse
  */
 export class Pulse {
-  /**
+	/**
    * Current pulse number within the measure (1-based index).
    * @type {number}
    */
-  readonly pulse: number;
+	public readonly pulse: number;
 
-  /**
+	/**
    * Total pulses in the current measure.
    * @type {number}
    */
-  readonly pulses: number;
+	public readonly pulses: number;
 
-  /**
+	/**
    * Number of subdivisions per beat.
    * For example, 1 = quarter notes, 2 = eighth notes, 4 = sixteenth notes.
    * @type {number}
    */
-  readonly subdivs: number;
+	public readonly subdivs: number;
 
-  /**
+	/**
    * Completion percentage of the current measure (0.0 - 1.0).
    * Useful for visual progress indicators.
    * @type {number}
    */
-  readonly complete: number;
+	public readonly complete: number;
 
-  /**
+	/**
    * Current measure count (1-based index).
    * Increases each time a complete measure is finished.
    * @type {number}
    */
-  readonly measure: number;
+	public readonly measure: number;
 
-  /**
+	/**
    * Current beat within the measure (1-based index).
    * @type {number}
    */
-  readonly beat: number;
+	public readonly beat: number;
 
-  /**
+	/**
    * Indicates if this pulse is the downbeat (first pulse of a beat).
    * Useful for accenting the first beat or playing different sounds.
    * @type {boolean}
    */
-  readonly isDownBeat: boolean;
+	public readonly isDownBeat: boolean;
 
-  /**
+	/**
    * Creates a new Pulse instance with timing information.
    *
    * @param {Object} params - Timing parameters
@@ -91,7 +91,7 @@ export class Pulse {
    *   isDownBeat: true // This is the first subdivision of the beat
    * });
    */
-  constructor(params: {
+	public constructor(params: {
     pulse: number;
     pulses: number;
     subdivs: number;
@@ -100,12 +100,12 @@ export class Pulse {
     beat: number;
     isDownBeat: boolean;
   }) {
-    this.pulse = params.pulse;
-    this.pulses = params.pulses;
-    this.subdivs = params.subdivs;
-    this.complete = params.complete;
-    this.measure = params.measure;
-    this.beat = params.beat;
-    this.isDownBeat = params.isDownBeat;
-  }
+		this.pulse = params.pulse;
+		this.pulses = params.pulses;
+		this.subdivs = params.subdivs;
+		this.complete = params.complete;
+		this.measure = params.measure;
+		this.beat = params.beat;
+		this.isDownBeat = params.isDownBeat;
+	}
 }

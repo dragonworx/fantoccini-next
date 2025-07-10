@@ -1,4 +1,4 @@
-import { Pulse } from "./pulse";
+import { Pulse } from './pulse';
 
 /**
  * A callback function that's executed on each metronome pulse.
@@ -52,37 +52,37 @@ export interface MetronomeSchedulerOptions {
  * setTimeout(() => scheduler.resume(), 2000);
  */
 export class MetronomeScheduler {
-  /** Listeners for pulse events */
-  private _pulseController: ((pulse: Pulse) => void)[] = [];
+	/** Listeners for pulse events */
+	private _pulseController: ((pulse: Pulse) => void)[] = [];
 
-  /** Active timer reference */
-  private _timer: number | null = null;
+	/** Active timer reference */
+	private _timer: number | null = null;
 
-  /** Whether the scheduler is currently running */
-  private _running: boolean = false;
+	/** Whether the scheduler is currently running */
+	private _running: boolean = false;
 
-  /** Expected timestamp for the next pulse */
-  private _expectedNextSysMs: number = 0;
+	/** Expected timestamp for the next pulse */
+	private _expectedNextSysMs: number = 0;
 
-  /** Current tempo in milliseconds per beat */
-  private _tempoBeat: number;
+	/** Current tempo in milliseconds per beat */
+	private _tempoBeat: number;
 
-  /** Optional pattern for rhythmic variations like swing */
-  private _rhythmPattern: number[] | null;
+	/** Optional pattern for rhythmic variations like swing */
+	private _rhythmPattern: number[] | null;
 
-  /** Current position in the rhythm pattern */
-  private _patternIndex: number = 0;
+	/** Current position in the rhythm pattern */
+	private _patternIndex: number = 0;
 
-  /** Remaining time when paused */
-  private _remainingInterval: number | null = null;
+	/** Remaining time when paused */
+	private _remainingInterval: number | null = null;
 
-  /** Timestamp when paused */
-  private _lastPauseTime: number | null = null;
+	/** Timestamp when paused */
+	private _lastPauseTime: number | null = null;
 
-  /** Flag for first pulse after resuming */
-  private _resumeNextIsFirst: boolean = false;
+	/** Flag for first pulse after resuming */
+	private _resumeNextIsFirst: boolean = false;
 
-  /**
+	/**
    * Creates a new MetronomeScheduler instance.
    *
    * @param {MetronomeSchedulerOptions} [options={}] - Configuration options
@@ -98,15 +98,15 @@ export class MetronomeScheduler {
    *   autoStart: true
    * });
    */
-  constructor(options: MetronomeSchedulerOptions = {}) {
-    this._tempoBeat = options.tempoBeat ?? 600;
-    this._rhythmPattern = options.rhythmPattern ?? null;
-    if (options.autoStart) {
-      this.start(this._tempoBeat, () => {});
-    }
-  }
+	public constructor(options: MetronomeSchedulerOptions = {}) {
+		this._tempoBeat = options.tempoBeat ?? 600;
+		this._rhythmPattern = options.rhythmPattern ?? null;
+		if (options.autoStart) {
+			this.start(this._tempoBeat, () => {});
+		}
+	}
 
-  /**
+	/**
    * Registers a listener for metronome pulse events.
    *
    * @param {function} listener - Function that receives Pulse objects
@@ -125,15 +125,17 @@ export class MetronomeScheduler {
    *
    * @see metronome.Pulse
    */
-  onPulse(listener: (pulse: Pulse) => void): () => void {
-    this._pulseController.push(listener);
-    return () => {
-      const idx = this._pulseController.indexOf(listener);
-      if (idx !== -1) this._pulseController.splice(idx, 1);
-    };
-  }
+	public onPulse(listener: (pulse: Pulse) => void): () => void {
+		this._pulseController.push(listener);
+		return () => {
+			const idx = this._pulseController.indexOf(listener);
+			if (idx !== -1) {
+				this._pulseController.splice(idx, 1);
+			}
+		};
+	}
 
-  /**
+	/**
    * Starts the metronome scheduler and begins emitting pulses.
    *
    * @param {number} [tempoBeat] - Duration of a beat in milliseconds (overrides constructor setting)
@@ -151,15 +153,17 @@ export class MetronomeScheduler {
    * @see resume
    * @see stop
    */
-  start(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
-    if (tempoBeat !== undefined) this._tempoBeat = tempoBeat;
-    this._running = true;
-    this._resetTimer();
-    this._patternIndex = 0;
-    this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
-  }
+	public start(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
+		if (tempoBeat !== undefined) {
+			this._tempoBeat = tempoBeat;
+		}
+		this._running = true;
+		this._resetTimer();
+		this._patternIndex = 0;
+		this._schedulePulse(this._tempoBeat, onPulseCallback ?? ((): void => {}));
+	}
 
-  /**
+	/**
    * Stops the metronome scheduler completely.
    * Unlike pause, this resets the internal state.
    *
@@ -172,15 +176,15 @@ export class MetronomeScheduler {
    * @see start
    * @see pause
    */
-  stop(): void {
-    this._running = false;
-    if (this._timer) {
-      clearTimeout(this._timer);
-      this._timer = null;
-    }
-  }
+	public stop(): void {
+		this._running = false;
+		if (this._timer) {
+			clearTimeout(this._timer);
+			this._timer = null;
+		}
+	}
 
-  /**
+	/**
    * Pauses the metronome scheduler temporarily.
    * The metronome can be resumed later from the same position.
    *
@@ -196,21 +200,23 @@ export class MetronomeScheduler {
    * @see resume
    * @see stop
    */
-  pause(): void {
-    this._running = false;
-    if (this._timer) {
-      clearTimeout(this._timer);
-      this._timer = null;
-    }
-    // Calculate remaining interval until next pulse
-    if (this._expectedNextSysMs > 0) {
-      this._lastPauseTime = Date.now();
-      this._remainingInterval = this._expectedNextSysMs - this._lastPauseTime;
-      if (this._remainingInterval < 0) this._remainingInterval = 0;
-    }
-  }
+	public pause(): void {
+		this._running = false;
+		if (this._timer) {
+			clearTimeout(this._timer);
+			this._timer = null;
+		}
+		// Calculate remaining interval until next pulse
+		if (this._expectedNextSysMs > 0) {
+			this._lastPauseTime = Date.now();
+			this._remainingInterval = this._expectedNextSysMs - this._lastPauseTime;
+			if (this._remainingInterval < 0) {
+				this._remainingInterval = 0;
+			}
+		}
+	}
 
-  /**
+	/**
    * Resumes the metronome scheduler from a paused state.
    * Continues timing from where it was paused, maintaining beat integrity.
    *
@@ -230,54 +236,60 @@ export class MetronomeScheduler {
    *
    * @see pause
    */
-  resume(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
-    if (this._running) return; // Prevent multiple timers
-    if (tempoBeat !== undefined) this._tempoBeat = tempoBeat;
-    // If we have a remaining interval from pause, use it for the first pulse, but always set _expectedNextSysMs to now + normal interval
-    if (this._remainingInterval !== null) {
-      this._running = true;
-      this._resumeNextIsFirst = true;
-      const delay = this._remainingInterval;
-      this._remainingInterval = null;
-      setTimeout(
-        () => {
-          if (!this._running) return;
-          onPulseCallback?.();
-          // After first resumed pulse, set _expectedNextSysMs to now + normal interval
-          let interval;
-          if (this._rhythmPattern && this._rhythmPattern.length > 0) {
-            this._patternIndex =
+	public resume(tempoBeat?: number, onPulseCallback?: PulseCallback): void {
+		if (this._running) {
+			return;
+		} // Prevent multiple timers
+		if (tempoBeat !== undefined) {
+			this._tempoBeat = tempoBeat;
+		}
+		// If we have a remaining interval from pause, use it for the first pulse, but always set _expectedNextSysMs to now + normal interval
+		if (this._remainingInterval !== null) {
+			this._running = true;
+			this._resumeNextIsFirst = true;
+			const delay = this._remainingInterval;
+			this._remainingInterval = null;
+			setTimeout(
+				() => {
+					if (!this._running) {
+						return;
+					}
+					onPulseCallback?.();
+					// After first resumed pulse, set _expectedNextSysMs to now + normal interval
+					let interval;
+					if (this._rhythmPattern && this._rhythmPattern.length > 0) {
+						this._patternIndex =
               (this._patternIndex + 1) % this._rhythmPattern.length;
-            interval =
+						interval =
               this._tempoBeat * this._rhythmPattern[this._patternIndex];
-          } else {
-            interval = this._tempoBeat;
-          }
-          this._expectedNextSysMs = Date.now() + interval;
-          this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
-        },
-        Math.max(0, delay),
-      );
-    } else {
-      this._running = true;
-      this._schedulePulse(this._tempoBeat, onPulseCallback ?? (() => {}));
-    }
-  }
+					} else {
+						interval = this._tempoBeat;
+					}
+					this._expectedNextSysMs = Date.now() + interval;
+					this._schedulePulse(this._tempoBeat, onPulseCallback ?? ((): void => {}));
+				},
+				Math.max(0, delay),
+			);
+		} else {
+			this._running = true;
+			this._schedulePulse(this._tempoBeat, onPulseCallback ?? ((): void => {}));
+		}
+	}
 
-  /**
+	/**
    * Resets the internal timer state.
    *
    * @returns {void}
    */
-  private _resetTimer(): void {
-    this._expectedNextSysMs = 0;
-    if (this._timer) {
-      clearTimeout(this._timer);
-      this._timer = null;
-    }
-  }
+	private _resetTimer(): void {
+		this._expectedNextSysMs = 0;
+		if (this._timer) {
+			clearTimeout(this._timer);
+			this._timer = null;
+		}
+	}
 
-  /**
+	/**
    * Schedules the next pulse with high-precision timing.
    * Uses adaptive scheduling to maintain accurate timing even with system jitter.
    *
@@ -286,50 +298,52 @@ export class MetronomeScheduler {
    * @param {boolean} [isResume=false] - Whether this is the first pulse after resuming
    * @returns {void}
    */
-  private _schedulePulse(
-    tempoBeat: number,
-    onPulseCallback: PulseCallback,
-    isResume: boolean = false,
-  ): void {
-    if (!this._running) return;
+	private _schedulePulse(
+		tempoBeat: number,
+		onPulseCallback: PulseCallback,
+		isResume: boolean = false,
+	): void {
+		if (!this._running) {
+			return;
+		}
 
-    const currentTime = Date.now();
+		const currentTime = Date.now();
 
-    let interval = tempoBeat;
-    if (this._rhythmPattern && this._rhythmPattern.length > 0) {
-      interval = tempoBeat * this._rhythmPattern[this._patternIndex];
-    }
+		let interval = tempoBeat;
+		if (this._rhythmPattern && this._rhythmPattern.length > 0) {
+			interval = tempoBeat * this._rhythmPattern[this._patternIndex];
+		}
 
-    if (this._expectedNextSysMs === 0 || isResume) {
-      this._expectedNextSysMs = currentTime + interval;
-      // If resuming, after this first pulse, reset _expectedNextSysMs to use normal interval from now
-      if (isResume) {
-        this._resumeNextIsFirst = true;
-      }
-    }
+		if (this._expectedNextSysMs === 0 || isResume) {
+			this._expectedNextSysMs = currentTime + interval;
+			// If resuming, after this first pulse, reset _expectedNextSysMs to use normal interval from now
+			if (isResume) {
+				this._resumeNextIsFirst = true;
+			}
+		}
 
-    const actualInterval = this._expectedNextSysMs - currentTime;
+		const actualInterval = this._expectedNextSysMs - currentTime;
 
-    this._timer = setTimeout(
-      () => {
-        onPulseCallback();
+		this._timer = setTimeout(
+			() => {
+				onPulseCallback();
 
-        // Normal scheduling after resume
-        if (this._rhythmPattern && this._rhythmPattern.length > 0) {
-          this._patternIndex =
+				// Normal scheduling after resume
+				if (this._rhythmPattern && this._rhythmPattern.length > 0) {
+					this._patternIndex =
             (this._patternIndex + 1) % this._rhythmPattern.length;
-          interval = tempoBeat * this._rhythmPattern[this._patternIndex];
-        } else {
-          interval = tempoBeat;
-        }
-        this._expectedNextSysMs += interval;
-        this._schedulePulse(tempoBeat, onPulseCallback);
-      },
-      Math.max(0, actualInterval),
-    );
-  }
+					interval = tempoBeat * this._rhythmPattern[this._patternIndex];
+				} else {
+					interval = tempoBeat;
+				}
+				this._expectedNextSysMs += interval;
+				this._schedulePulse(tempoBeat, onPulseCallback);
+			},
+			Math.max(0, actualInterval),
+		);
+	}
 
-  /**
+	/**
    * Emits a pulse event to all registered listeners.
    *
    * @param {Pulse} pulse - The pulse object containing timing information
@@ -341,13 +355,13 @@ export class MetronomeScheduler {
    *
    * @see onPulse
    */
-  emitPulse(pulse: Pulse): void {
-    for (const listener of this._pulseController) {
-      listener(pulse);
-    }
-  }
+	public emitPulse(pulse: Pulse): void {
+		for (const listener of this._pulseController) {
+			listener(pulse);
+		}
+	}
 
-  /**
+	/**
    * Sets a new rhythm pattern for creating rhythmic variations.
    *
    * @param {number[]} pattern - Array of beat duration multipliers
@@ -363,12 +377,12 @@ export class MetronomeScheduler {
    * // Set an even rhythm (removes any pattern)
    * scheduler.setRhythmPattern([1]);
    */
-  setRhythmPattern(pattern: number[]): void {
-    this._rhythmPattern = pattern;
-    this._patternIndex = 0;
-  }
+	public setRhythmPattern(pattern: number[]): void {
+		this._rhythmPattern = pattern;
+		this._patternIndex = 0;
+	}
 
-  /**
+	/**
    * Sets a new tempo in milliseconds per beat.
    *
    * @param {number} tempoBeat - Beat duration in milliseconds
@@ -381,11 +395,11 @@ export class MetronomeScheduler {
    * // Set to 90 BPM (667ms per beat)
    * scheduler.setTempo(667);
    */
-  setTempo(tempoBeat: number): void {
-    this._tempoBeat = tempoBeat;
-  }
+	public setTempo(tempoBeat: number): void {
+		this._tempoBeat = tempoBeat;
+	}
 
-  /**
+	/**
    * Disposes the metronome scheduler and releases all resources.
    * Call this method when the scheduler is no longer needed to prevent memory leaks.
    *
@@ -395,13 +409,13 @@ export class MetronomeScheduler {
    * // Clean up when the scheduler is no longer needed
    * scheduler.dispose();
    */
-  dispose(): void {
-    this.stop();
-    this._pulseController = [];
-    this._remainingInterval = null;
-    this._lastPauseTime = null;
-    this._resumeNextIsFirst = false;
-    this._expectedNextSysMs = 0;
-    this._running = false;
-  }
+	public dispose(): void {
+		this.stop();
+		this._pulseController = [];
+		this._remainingInterval = null;
+		this._lastPauseTime = null;
+		this._resumeNextIsFirst = false;
+		this._expectedNextSysMs = 0;
+		this._running = false;
+	}
 }

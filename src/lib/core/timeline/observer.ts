@@ -36,8 +36,8 @@
  *   }
  * }
  */
-export interface IObserver {
-  update(context: any): void;
+export interface IObserver<T = unknown> {
+  update(context: T): void;
 }
 
 /**
@@ -71,10 +71,10 @@ export interface IObserver {
  *   }
  * }
  */
-export interface IObservable {
-  subscribe(observer: IObserver): void;
-  unsubscribe(observer: IObserver): void;
-  notify(context: any): void;
+export interface IObservable<T = unknown> {
+  subscribe(observer: IObserver<T>): void;
+  unsubscribe(observer: IObserver<T>): void;
+  notify(context: T): void;
 }
 
 /**
@@ -103,36 +103,36 @@ export interface IObservable {
  *   }
  * }
  */
-export abstract class Observable implements IObservable {
-  /**
+export abstract class Observable<T = unknown> implements IObservable<T> {
+	/**
    * Set of observers that are subscribed to this observable.
-   * @private
+  * @private
    */
-  private observers: Set<IObserver> = new Set();
+	private observers: Set<IObserver<T>> = new Set();
 
-  /**
+	/**
    * Adds an observer to the list of observers.
    * Once subscribed, the observer will receive notifications via its update method.
    *
    * @param {IObserver} observer - The observer to subscribe
    * @returns {void}
    */
-  subscribe(observer: IObserver): void {
-    this.observers.add(observer);
-  }
+	public subscribe(observer: IObserver): void {
+		this.observers.add(observer);
+	}
 
-  /**
+	/**
    * Removes an observer from the list of observers.
    * The observer will no longer receive notifications.
    *
    * @param {IObserver} observer - The observer to unsubscribe
    * @returns {void}
    */
-  unsubscribe(observer: IObserver): void {
-    this.observers.delete(observer);
-  }
+	public unsubscribe(observer: IObserver): void {
+		this.observers.delete(observer);
+	}
 
-  /**
+	/**
    * Notifies all observers by calling their update method with the provided context.
    *
    * @param {any} context - Information to pass to the observers
@@ -142,17 +142,17 @@ export abstract class Observable implements IObservable {
    * // Notify observers of a time change
    * this.notify(this.currentTime);
    */
-  notify(context: any): void {
-    this.observers.forEach((observer) => observer.update(context));
-  }
+	public notify(context: T): void {
+		this.observers.forEach((observer) => observer.update(context));
+	}
 
-  /**
+	/**
    * Gets the current number of subscribed observers.
    *
    * @protected
    * @returns {number} Number of observers
    */
-  protected getObserverCount(): number {
-    return this.observers.size;
-  }
+	protected getObserverCount(): number {
+		return this.observers.size;
+	}
 }
