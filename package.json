@@ -14,7 +14,7 @@
     "bump": "bunx bumpp",
     "browser-tools-server": "bunx @agentdeskai/browser-tools-server@latest",
     "browser-tools-mcp": "bunx @agentdeskai/browser-tools-mcp@latest",
-    "docs": "jsdoc -c jsdoc.json",
+    "docs": "jsdoc -c jsdoc.docdash.json",
     "docs:better": "jsdoc -c jsdoc.better-docs.json",
     "docs:docdash": "jsdoc -c jsdoc.docdash.json",
     "docs:watch": "nodemon --watch src --ext js,ts --exec 'bun run docs'",
