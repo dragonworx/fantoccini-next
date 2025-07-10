@@ -1,5 +1,5 @@
 <script lang="ts">
-	let name: string = 'SvelteKit';
+	const name: string = 'SvelteKit';
 	let count: number = 0;
 
 	function increment(): void {
@@ -22,7 +22,7 @@
 
 <section>
 	<h1>Welcome to {name}!</h1>
-	
+
 	<p>This is your SvelteKit app with TypeScript support.</p>
 
 	<div class="counter">

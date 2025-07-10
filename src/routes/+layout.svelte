@@ -1,33 +1,33 @@
 <script lang="ts">
-    import '../app.css';
+	import '../app.css';
 </script>
 
 <div class="app">
-    <header>
-        <nav>
-            <a href="/">Home</a>
-        </nav>
+	<header>
+		<nav>
+			<a href="/">Home</a>
+		</nav>
 
-        <nav>
-            <a href="/test/metronome">Test / Metronome</a>
-        </nav>
+		<nav>
+			<a href="/test/metronome">Test / Metronome</a>
+		</nav>
 
-        <nav>
-            <a href="/test/sprite">Test / Sprite</a>
-        </nav>
-    </header>
+		<nav>
+			<a href="/test/sprite">Test / Sprite</a>
+		</nav>
+	</header>
 
-    <main>
-        <slot />
-    </main>
+	<main>
+		<slot />
+	</main>
 
-    <footer>
-        <p>
-            &copy; 2025 Fantoccini - Ali Chamas <a
-                href="https://github.com/dragonworx">github/dragonworx</a
-            > - all rights reserved.
-        </p>
-    </footer>
+	<footer>
+		<p>
+			&copy; 2025 Fantoccini - Ali Chamas <a
+				href="https://github.com/dragonworx">github/dragonworx</a
+			> - all rights reserved.
+		</p>
+	</footer>
 </div>
 
 <style>

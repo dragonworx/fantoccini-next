@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Metronome, quaver } from "../src/lib/metronome";
-import { Rhythm, TimeSignature } from "../src/lib/metronome";
-import { MetronomeScheduler } from "../src/lib/metronome/";
-import { Pulse } from "../src/lib/metronome/pulse";
+import { Metronome, quaver, Rhythm, TimeSignature, MetronomeScheduler, Pulse } from "../src/core";
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

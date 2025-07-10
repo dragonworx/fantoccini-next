@@ -17,7 +17,7 @@ import {
   DOMTimelineObject,
   ITimeline,
   Timeline,
-} from "../src/lib/core/timeline/index.js";
+} from "../src/core";
 
 // Mock DOM for testing
 Object.defineProperty(globalThis, "document", {

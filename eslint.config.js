@@ -88,7 +88,10 @@ export default [
 			parser: svelteParser,
 			parserOptions: {
 				parser: tsparser,
-				extraFileExtensions: ['.svelte']
+				extraFileExtensions: ['.svelte'],
+				svelteFeatures: {
+					experimentalGenerics: true
+				}
 			},
 			globals: {
 				document: 'readonly',
@@ -110,13 +113,31 @@ export default [
 			}
 		},
 		plugins: {
-			svelte: sveltePlugin
+			svelte: sveltePlugin,
+			'@typescript-eslint': tseslint
 		},
 		rules: {
 			...sveltePlugin.configs.recommended.rules,
-			// Override some rules for Svelte
+			// Disable conflicting rules for Svelte
+			'indent': 'off',
+			'@typescript-eslint/indent': 'off',
+			// Apply code style rules
 			'quotes': ['error', 'single'],
-			'indent': ['error', 'tab']
+			'semi': ['error', 'always'],
+			'prefer-const': 'error',
+			'no-var': 'error',
+			// Svelte-specific indentation
+			'svelte/indent': ['error', {
+				indent: 'tab',
+				switchCase: 1,
+				alignAttributesVertically: false
+			}],
+			// Allow unused variables in Svelte (for component props)
+			'@typescript-eslint/no-unused-vars': ['warn', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_'
+			}],
+			'no-unused-vars': 'off'
 		}
 	}
 ];

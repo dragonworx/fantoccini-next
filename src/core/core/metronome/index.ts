@@ -33,6 +33,7 @@
 import { Metronome } from './metronome';
 import { MetronomeScheduler } from './metronome_scheduler';
 import { TimeSignature } from './time_signature';
+import { Pulse } from './pulse';
 import {
 	Rhythm,
 	quarter,
@@ -57,6 +58,7 @@ export {
 	Metronome,
 	MetronomeScheduler,
 	TimeSignature,
+	Pulse,
 	Rhythm,
 	quarter,
 	quaver,
