@@ -9,11 +9,19 @@
 		</nav>
 
 		<nav>
-			<a href="/test/metronome">Test / Metronome</a>
+			<a href="/test/metronome">Metronome</a>
 		</nav>
 
 		<nav>
-			<a href="/test/sprite">Test / Sprite</a>
+			<a href="/test/sprite">Sprite</a>
+		</nav>
+
+		<nav>
+			<a href="/test/sprite-simple">Sprite Simple</a>
+		</nav>
+
+		<nav>
+			<a href="/test/timeline-demo">Timeline</a>
 		</nav>
 	</header>
 
