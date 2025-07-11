@@ -182,7 +182,33 @@ describe("Metronome", () => {
 
   it("should emit start, stop, pause, resume, and updated events", () => {
     const events: string[] = [];
-    metronome.onEvent((e) => events.push(e));
+    
+    metronome.onEvent('start', (data) => {
+      events.push('start');
+      expect(data.bpm).toBe(120);
+      expect(data.currentTime).toBeGreaterThan(0);
+    });
+    
+    metronome.onEvent('pause', (data) => {
+      events.push('pause');
+      expect(data.currentPulse).toBeGreaterThanOrEqual(1);
+    });
+    
+    metronome.onEvent('resume', (data) => {
+      events.push('resume');
+      expect(data.currentPulse).toBeGreaterThanOrEqual(1);
+    });
+    
+    metronome.onEvent('updated', (data) => {
+      events.push('updated');
+      expect(data.oldRhythm).toBeDefined();
+      expect(data.newRhythm).toBeDefined();
+    });
+    
+    metronome.onEvent('stop', (data) => {
+      events.push('stop');
+      expect(data.totalPulses).toBeGreaterThanOrEqual(0);
+    });
 
     metronome.start();
     metronome.pause();
@@ -220,7 +246,24 @@ describe("Metronome", () => {
 
   it("should reset counters and emit updated event on update", async () => {
     const events: string[] = [];
-    metronome.onEvent((e) => events.push(e));
+    metronome.onEvent('updated', (data) => {
+      events.push('updated');
+      expect(data.oldRhythm.bpm).toBe(120);
+      expect(data.newRhythm.bpm).toBe(60);
+    });
+    
+    metronome.onEvent('tempo:change', (data) => {
+      events.push('tempo:change');
+      expect(data.oldBpm).toBe(120);
+      expect(data.newBpm).toBe(60);
+    });
+    
+    metronome.onEvent('timeSignature:change', (data) => {
+      events.push('timeSignature:change');
+      expect(data.oldSignature).toBe('4/4');
+      expect(data.newSignature).toBe('3/4');
+    });
+    
     const newSettings = new Rhythm({
       bpm: 60,
       timeSignature: new TimeSignature(3, 4),
@@ -228,6 +271,8 @@ describe("Metronome", () => {
     });
     metronome.update(newSettings);
     expect(events).toContain("updated");
+    expect(events).toContain("tempo:change");
+    expect(events).toContain("timeSignature:change");
     expect(metronome.settings.bpm).toBe(60);
     expect(metronome.settings.timeSignature.upper).toBe(3);
   });

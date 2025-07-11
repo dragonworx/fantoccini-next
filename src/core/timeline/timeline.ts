@@ -5,6 +5,59 @@
 
 import { IObserver, IObservable, Observable } from './observer.js';
 import { ITimelineObject } from './timeline-object.js';
+import { EventEmitter } from '../event-emitter.js';
+
+/**
+ * Concrete EventEmitter implementation for Timeline events.
+ * @class TimelineEventEmitter
+ * @memberof core.timeline
+ */
+class TimelineEventEmitter extends EventEmitter<TimelineEventMap> {
+	public constructor() {
+		super({ keepHistory: false });
+	}
+}
+
+/**
+ * Event map for timeline events with type-safe payloads.
+ *
+ * @interface TimelineEventMap
+ * @memberof core.timeline
+ */
+export interface TimelineEventMap {
+	/** Emitted when the timeline starts playing */
+	'play': { currentTime: number; cascade: boolean };
+	/** Emitted when the timeline pauses */
+	'pause': { currentTime: number; cascade: boolean };
+	/** Emitted when the timeline seeks to a specific time */
+	'seek': { time: number; previousTime: number; cascade: boolean };
+	/** Emitted when the timeline's time updates */
+	'timeUpdate': { currentTime: number; deltaTime: number };
+	/** Emitted when the timeline completes a loop iteration */
+	'loopComplete': { loopNumber: number; currentTime: number };
+	/** Emitted when the timeline completes all loops and stops */
+	'complete': { totalTime: number; totalLoops: number };
+	/** Emitted when the timeline resets to the beginning */
+	'reset': { previousTime: number };
+	/** Emitted when a child timeline is added */
+	'childAdded': { child: ITimeline; childCount: number };
+	/** Emitted when a child timeline is removed */
+	'childRemoved': { child: ITimeline; childCount: number };
+	/** Emitted when a timeline object is added */
+	'objectAdded': { object: ITimelineObject; objectCount: number };
+	/** Emitted when a timeline object is removed */
+	'objectRemoved': { object: ITimelineObject; objectCount: number };
+	/** Emitted when the timeline's duration changes */
+	'durationChange': { oldDuration: number | null; newDuration: number | null };
+	/** Emitted when the timeline's frame rate changes */
+	'framerateChange': { oldFramerate: number; newFramerate: number };
+	/** Emitted when the timeline's time scale changes */
+	'timeScaleChange': { oldTimeScale: number; newTimeScale: number };
+	/** Emitted when the timeline's loop settings change */
+	'loopSettingsChange': { loop: boolean; repeatCount: number };
+	/** Index signature for extensibility */
+	[key: string]: unknown;
+}
 
 /**
  * A self-nesting temporal container that manages playback and time conversion.
@@ -59,10 +112,12 @@ export interface ITimeline extends IObserver, IObservable {
 
 /**
  * Implementation of ITimeline that manages hierarchical time and playback.
+ * Extends both Observable (for backward compatibility) and EventEmitter (for new event system).
  * @class Timeline
  * @memberof core.timeline
  */
 export class Timeline extends Observable implements ITimeline {
+	private eventEmitter: TimelineEventEmitter;
 	// Hierarchy
 	public parent: ITimeline | null = null;
 	public children: ITimeline[] = [];
@@ -70,9 +125,9 @@ export class Timeline extends Observable implements ITimeline {
 
 	// Timing Properties
 	public startTime: number = 0;
-	public duration: number | null = null; // Default null (infinite duration)
-	public framerate: number = 60; // Default 60 FPS
-	public timeScale: number = 1; // Normal speed
+	private _duration: number | null = null; // Default null (infinite duration)
+	private _framerate: number = 60; // Default 60 FPS
+	private _timeScale: number = 1; // Normal speed
 
 	// Loop Properties
 	public loop: boolean = false;
@@ -86,6 +141,7 @@ export class Timeline extends Observable implements ITimeline {
 
 	public constructor(options: Partial<Pick<Timeline, 'startTime' | 'duration' | 'framerate' | 'timeScale' | 'loop' | 'repeatCount'>> = {}) {
 		super();
+		this.eventEmitter = new TimelineEventEmitter();
 		Object.assign(this, options);
 	}
 
@@ -97,11 +153,107 @@ export class Timeline extends Observable implements ITimeline {
 		return this._currentLoop;
 	}
 
+	public get duration(): number | null {
+		return this._duration;
+	}
+
+	public set duration(value: number | null) {
+		const oldDuration = this._duration;
+		this._duration = value;
+		if (oldDuration !== value) {
+			this.emitEvent('durationChange', { oldDuration, newDuration: value });
+		}
+	}
+
+	public get framerate(): number {
+		return this._framerate;
+	}
+
+	public set framerate(value: number) {
+		const oldFramerate = this._framerate;
+		this._framerate = value;
+		if (oldFramerate !== value) {
+			this.emitEvent('framerateChange', { oldFramerate, newFramerate: value });
+		}
+	}
+
+	public get timeScale(): number {
+		return this._timeScale;
+	}
+
+	public set timeScale(value: number) {
+		const oldTimeScale = this._timeScale;
+		this._timeScale = value;
+		if (oldTimeScale !== value) {
+			this.emitEvent('timeScaleChange', { oldTimeScale, newTimeScale: value });
+		}
+	}
+
+	// --- EventEmitter Delegation ---
+
+	/**
+	 * Adds an event listener for the specified timeline event.
+	 *
+	 * @template K - The event name type
+	 * @param event - The event name
+	 * @param listener - The event listener function
+	 * @returns A function to remove this listener
+	 */
+	public on<K extends keyof TimelineEventMap>(
+		event: K,
+		listener: (data: TimelineEventMap[K]) => void
+	): () => boolean {
+		return this.eventEmitter.on(event, listener);
+	}
+
+	/**
+	 * Adds a one-time event listener for the specified timeline event.
+	 *
+	 * @template K - The event name type
+	 * @param event - The event name
+	 * @param listener - The event listener function
+	 * @returns A function to remove this listener
+	 */
+	public once<K extends keyof TimelineEventMap>(
+		event: K,
+		listener: (data: TimelineEventMap[K]) => void
+	): () => boolean {
+		return this.eventEmitter.once(event, listener);
+	}
+
+	/**
+	 * Removes an event listener for the specified timeline event.
+	 *
+	 * @template K - The event name type
+	 * @param event - The event name
+	 * @param listener - The event listener function to remove
+	 * @returns true if the listener was removed, false if it wasn't found
+	 */
+	public off<K extends keyof TimelineEventMap>(
+		event: K,
+		listener: (data: TimelineEventMap[K]) => void
+	): boolean {
+		return this.eventEmitter.off(event, listener);
+	}
+
+	/**
+	 * Emits a timeline event with the specified payload.
+	 *
+	 * @template K - The event name type
+	 * @param event - The event name
+	 * @param payload - The event payload
+	 * @returns The number of listeners that were called
+	 */
+	private emitEvent<K extends keyof TimelineEventMap>(event: K, payload: TimelineEventMap[K]): number {
+		return this.eventEmitter['emit'](event, payload);
+	}
+
 	// --- Playback Control ---
 
 	public play(cascade: boolean = true): void {
 		this.isPlaying = true;
-    
+		this.emitEvent('play', { currentTime: this._currentTime, cascade });
+
 		if (cascade) {
 			this.children.forEach(child => child.play(true));
 		}
@@ -109,21 +261,25 @@ export class Timeline extends Observable implements ITimeline {
 
 	public pause(cascade: boolean = true): void {
 		this.isPlaying = false;
-    
+		this.emitEvent('pause', { currentTime: this._currentTime, cascade });
+
 		if (cascade) {
 			this.children.forEach(child => child.pause(true));
 		}
 	}
 
 	public seek(time: number, cascade: boolean = true): void {
+		const previousTime = this._currentTime;
 		this._rawTime = Math.max(0, time);
 		this.updateTimeFromRaw();
-    
+
+		this.emitEvent('seek', { time: this._currentTime, previousTime, cascade });
+
 		// Update timeline objects (not children - they'll be updated via cascade)
 		this.objects.forEach(object => {
 			object.update(this._currentTime);
 		});
-    
+
 		if (cascade) {
 			this.children.forEach(child => {
 				const childLocalTime = this.parentTimeToChildTime(this._currentTime, child);
@@ -138,10 +294,11 @@ export class Timeline extends Observable implements ITimeline {
 		if (child.parent) {
 			child.parent.removeChild(child);
 		}
-    
+
 		child.parent = this;
 		this.children.push(child);
 		this.subscribe(child);
+		this.emitEvent('childAdded', { child, childCount: this.children.length });
 	}
 
 	public removeChild(child: ITimeline): void {
@@ -150,12 +307,14 @@ export class Timeline extends Observable implements ITimeline {
 			this.children.splice(index, 1);
 			child.parent = null;
 			this.unsubscribe(child);
+			this.emitEvent('childRemoved', { child, childCount: this.children.length });
 		}
 	}
 
 	public addObject(object: ITimelineObject): void {
 		this.objects.push(object);
 		this.subscribe(object);
+		this.emitEvent('objectAdded', { object, objectCount: this.objects.length });
 	}
 
 	public removeObject(object: ITimelineObject): void {
@@ -163,6 +322,7 @@ export class Timeline extends Observable implements ITimeline {
 		if (index >= 0) {
 			this.objects.splice(index, 1);
 			this.unsubscribe(object);
+			this.emitEvent('objectRemoved', { object, objectCount: this.objects.length });
 		}
 	}
 
@@ -173,10 +333,14 @@ export class Timeline extends Observable implements ITimeline {
    * or receives update from parent timeline.
    */
 	public update(context: number | unknown): void {
+		const previousTime = this._currentTime;
+		let deltaTime = 0;
+
 		if (this.parent === null) {
 			// Root timeline - context should be delta time in seconds
 			if (this.isPlaying && typeof context === 'number') {
-				this._rawTime += context * this.timeScale;
+				deltaTime = context * this.timeScale;
+				this._rawTime += deltaTime;
 				this.updateTimeFromRaw();
 			}
 		} else {
@@ -184,7 +348,13 @@ export class Timeline extends Observable implements ITimeline {
 			if (typeof context === 'number') {
 				this._rawTime = this.parentTimeToChildTime(context, this);
 				this.updateTimeFromRaw();
+				deltaTime = this._currentTime - previousTime;
 			}
+		}
+
+		// Emit time update event if time changed
+		if (this._currentTime !== previousTime) {
+			this.emitEvent('timeUpdate', { currentTime: this._currentTime, deltaTime });
 		}
 
 		this.updateChildren();
@@ -195,6 +365,9 @@ export class Timeline extends Observable implements ITimeline {
    * Maps the raw time to the correct timeline local time.
    */
 	private updateTimeFromRaw(): void {
+		const previousLoop = this._currentLoop;
+		const wasPlaying = this.isPlaying;
+
 		if (this.duration === null) {
 			// Infinite duration - raw time becomes current time
 			this._currentTime = Math.max(0, this._rawTime);
@@ -209,10 +382,13 @@ export class Timeline extends Observable implements ITimeline {
 			// No looping - clamp to duration
 			this._currentTime = Math.min(rawTime, duration);
 			this._currentLoop = 0;
-      
+
 			// Stop playback if we've reached the end
 			if (rawTime >= duration) {
 				this.isPlaying = false;
+				if (wasPlaying) {
+					this.emitEvent('complete', { totalTime: this._rawTime, totalLoops: 0 });
+				}
 			}
 			return;
 		}
@@ -234,10 +410,18 @@ export class Timeline extends Observable implements ITimeline {
 			this._currentTime = duration;
 			this._currentLoop = this.repeatCount - 1;
 			this.isPlaying = false;
+			if (wasPlaying) {
+				this.emitEvent('complete', { totalTime: this._rawTime, totalLoops: this.repeatCount });
+			}
 		} else {
 			// Continue looping (infinite or within repeat count)
 			this._currentTime = localTime;
 			this._currentLoop = totalLoops;
+
+			// Emit loop complete event if we moved to a new loop
+			if (this._currentLoop > previousLoop) {
+				this.emitEvent('loopComplete', { loopNumber: previousLoop, currentTime: this._currentTime });
+			}
 		}
 	}
 
@@ -284,10 +468,12 @@ export class Timeline extends Observable implements ITimeline {
    * Resets the timeline to the beginning and clears loop state.
    */
 	public reset(): void {
+		const previousTime = this._currentTime;
 		this._rawTime = 0;
 		this._currentTime = 0;
 		this._currentLoop = 0;
 		this.updateChildren();
+		this.emitEvent('reset', { previousTime });
 	}
 
 	/**
@@ -298,11 +484,11 @@ export class Timeline extends Observable implements ITimeline {
 		if (this.duration === null || (this.loop && this.repeatCount === 0)) {
 			return null; // Infinite duration
 		}
-    
+
 		if (!this.loop) {
 			return this.duration;
 		}
-    
+
 		return this.duration * this.repeatCount;
 	}
 
@@ -315,7 +501,7 @@ export class Timeline extends Observable implements ITimeline {
 		if (totalDuration === null) {
 			return null;
 		}
-    
+
 		return Math.min(1, this._rawTime / totalDuration);
 	}
 
@@ -327,7 +513,7 @@ export class Timeline extends Observable implements ITimeline {
 		if (this.duration === null) {
 			return null;
 		}
-    
+
 		return Math.min(1, this._currentTime / this.duration);
 	}
 
@@ -338,11 +524,11 @@ export class Timeline extends Observable implements ITimeline {
 		if (this.duration === null || (this.loop && this.repeatCount === 0)) {
 			return false; // Infinite timelines never complete
 		}
-    
+
 		if (!this.loop) {
 			return this._rawTime >= this.duration;
 		}
-    
+
 		return this.repeatCount > 0 && this._currentLoop >= this.repeatCount - 1 && this._currentTime >= this.duration;
 	}
 
@@ -355,6 +541,7 @@ export class Timeline extends Observable implements ITimeline {
 		}
 		this.loop = true;
 		this.repeatCount = 0;
+		this.emitEvent('loopSettingsChange', { loop: true, repeatCount: 0 });
 	}
 
 	/**
@@ -369,6 +556,7 @@ export class Timeline extends Observable implements ITimeline {
 		}
 		this.loop = true;
 		this.repeatCount = repeatCount;
+		this.emitEvent('loopSettingsChange', { loop: true, repeatCount });
 	}
 
 	/**
@@ -377,6 +565,7 @@ export class Timeline extends Observable implements ITimeline {
 	public disableLoop(): void {
 		this.loop = false;
 		this.repeatCount = 0;
+		this.emitEvent('loopSettingsChange', { loop: false, repeatCount: 0 });
 	}
 
 	// --- Debugging/Inspection ---
@@ -418,5 +607,27 @@ export class Timeline extends Observable implements ITimeline {
 			current = current.parent;
 		}
 		return depth;
+	}
+
+	/**
+   * Disposes of the timeline and cleans up all resources.
+   * This should be called when the timeline is no longer needed.
+   */
+	public dispose(): void {
+		this.eventEmitter.dispose();
+
+		// Clean up hierarchy
+		this.children.forEach(child => {
+			if (child instanceof Timeline) {
+				child.dispose();
+			}
+		});
+		this.children = [];
+		this.objects = [];
+
+		// Remove from parent if attached
+		if (this.parent) {
+			this.parent.removeChild(this);
+		}
 	}
 }

@@ -11,6 +11,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint src --ext .js,.ts,.svelte",
     "lint:fix": "eslint src --ext .js,.ts,.svelte --fix",
+    "tick": "node scripts/commit.js",
     "bump": "bunx bumpp",
     "browser-tools-server": "bunx @agentdeskai/browser-tools-server@latest",
     "browser-tools-mcp": "bunx @agentdeskai/browser-tools-mcp@latest",
@@ -18,8 +19,7 @@
     "docs:better": "jsdoc -c jsdoc.better-docs.json",
     "docs:docdash": "jsdoc -c jsdoc.docdash.json",
     "docs:watch": "nodemon --watch src --ext js,ts --exec 'bun run docs'",
-    "docs:serve": "cd doc-gen && python -m http.server 8080",
-    "commit": "node scripts/commit.js"
+    "docs:serve": "cd doc-gen && python -m http.server 8080"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

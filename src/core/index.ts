@@ -3,6 +3,9 @@
  * @namespace core
  */
 
+// Export event system
+export * from './event-emitter';
+
 // Export sprite system
 export * from './object/sprite';
 export * from './object/scene';

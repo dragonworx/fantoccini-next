@@ -26,18 +26,18 @@ const colors = {
 
 // Commit types configuration - easy to extend
 const commitTypes = [
+ 	{
+		name: 'wip',
+		description: 'Work in progress, incremental changes',
+		color: colors.yellow,
+		icon: '⚡'
+	},
 	{
 		name: 'fixes',
 		description: 'Bug fixes and corrections',
 		color: colors.red,
 		icon: '🔧'
 	},
-	{
-		name: 'wip',
-		description: 'Work in progress',
-		color: colors.yellow,
-		icon: '⚡'
-	}
 ];
 
 class CommitScript {

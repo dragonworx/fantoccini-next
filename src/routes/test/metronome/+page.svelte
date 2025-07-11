@@ -390,14 +390,12 @@
 			});
 		});
 
-		metronome.onEvent((event: string) => {
-			if (event === 'stop') {
-				measureProgress = 0;
-				currentPulse = null;
-				if (animationFrameId) {
-					cancelAnimationFrame(animationFrameId);
-					animationFrameId = null;
-				}
+		metronome.onEvent('stop', (_data) => {
+			measureProgress = 0;
+			currentPulse = null;
+			if (animationFrameId) {
+				cancelAnimationFrame(animationFrameId);
+				animationFrameId = null;
 			}
 		});
 	}

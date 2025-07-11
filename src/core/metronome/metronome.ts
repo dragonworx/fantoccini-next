@@ -1,31 +1,38 @@
 import { Rhythm } from './rhythm';
 import { MetronomeScheduler } from './metronome_scheduler';
 import { Pulse } from './pulse';
+import { EventEmitter } from '../event-emitter';
 
 /**
- * Valid events that can be emitted by the Metronome.
+ * Event map for metronome events with type-safe payloads.
  *
- * @typedef {"start" | "stop" | "pause" | "resume" | "updated"} MetronomeEvent
+ * @interface MetronomeEventMap
+ * @memberof core.metronome
  */
-type MetronomeEvent = 'start' | 'stop' | 'pause' | 'resume' | 'updated';
-
-/**
- * Function type for event listeners that respond to metronome events.
- *
- * @callback EventListener
- * @param {MetronomeEvent} event - The event type that occurred
- * @returns {void}
- */
-type EventListener = (event: MetronomeEvent) => void;
-
-/**
- * Function type for pulse listeners that respond to metronome pulses.
- *
- * @callback PulseListener
- * @param {Pulse} pulse - The pulse object containing timing information
- * @returns {void}
- */
-type PulseListener = (pulse: Pulse) => void;
+export interface MetronomeEventMap {
+	/** Emitted when the metronome starts */
+	'start': { currentTime: number; bpm: number };
+	/** Emitted when the metronome stops */
+	'stop': { finalTime: number; totalPulses: number };
+	/** Emitted when the metronome pauses */
+	'pause': { currentTime: number; currentPulse: number };
+	/** Emitted when the metronome resumes */
+	'resume': { currentTime: number; currentPulse: number };
+	/** Emitted when the metronome settings are updated */
+	'updated': { oldRhythm: Rhythm; newRhythm: Rhythm };
+	/** Emitted on each metronome pulse */
+	'pulse': Pulse;
+	/** Emitted when the metronome completes a full measure */
+	'measure': { measureNumber: number; totalBeats: number };
+	/** Emitted when the metronome reaches a downbeat */
+	'downbeat': { measureNumber: number; beat: number };
+	/** Emitted when the tempo changes */
+	'tempo:change': { oldBpm: number; newBpm: number };
+	/** Emitted when the time signature changes */
+	'timeSignature:change': { oldSignature: string; newSignature: string };
+	/** Index signature for extensibility */
+	[key: string]: unknown;
+}
 
 /**
  * A musical metronome that manages timing, beats, and rhythmic patterns.
@@ -59,7 +66,7 @@ type PulseListener = (pulse: Pulse) => void;
  * @see metronome.Rhythm
  * @see metronome.Pulse
  */
-export class Metronome {
+export class Metronome extends EventEmitter<MetronomeEventMap> {
 	/**
    * The rhythm settings for this metronome.
    * Contains tempo, time signature, and subdivision information.
@@ -77,20 +84,20 @@ export class Metronome {
 	public readonly timer: MetronomeScheduler;
 
 	/**
-   * Set of event listeners for metronome state changes.
+   * Total number of pulses emitted since starting.
    *
    * @private
-   * @type {Set<EventListener>}
+   * @type {number}
    */
-	private eventListeners: Set<EventListener> = new Set();
+	private _totalPulses = 0;
 
 	/**
-   * Set of pulse listeners that respond to each metronome pulse.
+   * Time when the metronome was started.
    *
    * @private
-   * @type {Set<PulseListener>}
+   * @type {number}
    */
-	private pulseListeners: Set<PulseListener> = new Set();
+	private _startTime = 0;
 
 	/**
    * Whether the metronome has been initialized.
@@ -138,38 +145,19 @@ export class Metronome {
    * @param {Rhythm} settings - The rhythm settings for this metronome
    */
 	public constructor(settings: Rhythm) {
+		super({ keepHistory: false });
 		this.settings = settings;
 		this.timer = new MetronomeScheduler();
 		this.timer.onPulse((pulse) => {
-			this.pulseListeners.forEach((listener) => listener(pulse));
+			this.emit('pulse', pulse);
 		});
-	}
-
-	/**
-   * Registers a listener for metronome events (start, stop, pause, etc.).
-   *
-   * @param {EventListener} listener - The callback function to execute when events occur
-   * @returns {Function} An unsubscribe function that removes this listener when called
-   *
-   * @example
-   * const metronome = new Metronome(rhythm);
-   * const unsubscribe = metronome.onEvent(event => {
-   *   console.log(`Metronome ${event}`);
-   * });
-   *
-   * // Later, to stop listening:
-   * unsubscribe();
-   */
-	public onEvent(listener: EventListener): (() => boolean) {
-		this.eventListeners.add(listener);
-		return () => this.eventListeners.delete(listener);
 	}
 
 	/**
    * Registers a listener for metronome pulses.
    * The listener will be called on each pulse with timing information.
    *
-   * @param {PulseListener} listener - The callback function to execute on each pulse
+   * @param {Function} listener - The callback function to execute on each pulse
    * @returns {Function} An unsubscribe function that removes this listener when called
    *
    * @example
@@ -180,9 +168,28 @@ export class Metronome {
    *   }
    * });
    */
-	public onPulse(listener: PulseListener): (() => boolean) {
-		this.pulseListeners.add(listener);
-		return () => this.pulseListeners.delete(listener);
+	public onPulse(listener: (pulse: Pulse) => void): (() => boolean) {
+		return this.on('pulse', listener);
+	}
+
+	/**
+   * Registers a listener for metronome state events.
+   *
+   * @param {string} event - The event type to listen for
+   * @param {Function} listener - The callback function to execute when the event occurs
+   * @returns {Function} An unsubscribe function that removes this listener when called
+   *
+   * @example
+   * const metronome = new Metronome(rhythm);
+   * const unsubscribe = metronome.onEvent('start', (data) => {
+   *   console.log(`Metronome started at ${data.bpm} BPM`);
+   * });
+   */
+	public onEvent<K extends keyof MetronomeEventMap>(
+		event: K,
+		listener: (data: MetronomeEventMap[K]) => void
+	): (() => boolean) {
+		return this.on(event, listener);
 	}
 
 	/**
@@ -227,9 +234,11 @@ export class Metronome {
    * metronome.start(); // Start the metronome
    */
 	public start(): void {
-		this._emitEvent('start');
+		this._startTime = Date.now();
+		this._totalPulses = 0;
 		this._resetCounters();
 		this.timer.start(this._calculateTempoBeat(), () => this._onPulse());
+		this.emit('start', { currentTime: this._startTime, bpm: this.settings.bpm });
 	}
 
 	/**
@@ -243,7 +252,8 @@ export class Metronome {
    */
 	public stop(): void {
 		this.timer.stop();
-		this._emitEvent('stop');
+		const finalTime = Date.now();
+		this.emit('stop', { finalTime, totalPulses: this._totalPulses });
 		this._resetCounters();
 	}
 
@@ -258,7 +268,7 @@ export class Metronome {
    */
 	public pause(): void {
 		this.timer.pause();
-		this._emitEvent('pause');
+		this.emit('pause', { currentTime: Date.now(), currentPulse: this._pulse });
 	}
 
 	/**
@@ -273,7 +283,7 @@ export class Metronome {
    * metronome.resume(); // Continue from where it was paused
    */
 	public resume(): void {
-		this._emitEvent('resume');
+		this.emit('resume', { currentTime: Date.now(), currentPulse: this._pulse });
 		this.timer.resume(this._calculateTempoBeat(), () => this._onPulse());
 	}
 
@@ -290,11 +300,24 @@ export class Metronome {
    * metronome.update(newRhythm);
    */
 	public update(newSettings: Rhythm): void {
+		const oldSettings = this.settings;
 		this.settings = newSettings;
 		this._resetCounters();
 		this.timer.stop();
 		this.timer.start(this._calculateTempoBeat(), () => this._onPulse());
-		this._emitEvent('updated');
+		this.emit('updated', { oldRhythm: oldSettings, newRhythm: newSettings });
+
+		// Emit specific change events if tempo or time signature changed
+		if (oldSettings.bpm !== newSettings.bpm) {
+			this.emit('tempo:change', { oldBpm: oldSettings.bpm, newBpm: newSettings.bpm });
+		}
+
+		if (oldSettings.timeSignature !== newSettings.timeSignature) {
+			this.emit('timeSignature:change', {
+				oldSignature: `${oldSettings.timeSignature.upper}/${oldSettings.timeSignature.lower}`,
+				newSignature: `${newSettings.timeSignature.upper}/${newSettings.timeSignature.lower}`
+			});
+		}
 	}
 
 	/**
@@ -307,6 +330,7 @@ export class Metronome {
 		this._measure = 1;
 		this._beat = 1;
 		this._currentGroupIndex = 0;
+		this._totalPulses = 0;
 	}
 
 	/**
@@ -324,6 +348,7 @@ export class Metronome {
       	: settings.timeSignature.upper;
 
 		const subdivisionsInCurrentBeat = settings.subDivisions;
+		const isDownBeat = (this._pulse - 1) % subdivisionsInCurrentBeat === 0;
 
 		// Create a Pulse object with the current timing information
 		const pulseObj = new Pulse({
@@ -333,11 +358,18 @@ export class Metronome {
 			complete: this._pulse / settings.pulsesPerMeasure,
 			measure: this._measure,
 			beat: this._beat,
-			isDownBeat: (this._pulse - 1) % subdivisionsInCurrentBeat === 0,
+			isDownBeat: isDownBeat,
 		});
 
-		this.timer.emitPulse(pulseObj);
+		// Emit downbeat event if this is a downbeat
+		if (isDownBeat) {
+			this.emit('downbeat', { measureNumber: this._measure, beat: this._beat });
+		}
 
+		this.timer.emitPulse(pulseObj);
+		this._totalPulses++;
+
+		const oldMeasure = this._measure;
 		this._pulse++;
 
 		// Handle measure boundary
@@ -346,6 +378,12 @@ export class Metronome {
 			this._measure++;
 			this._beat = 1;
 			this._currentGroupIndex = 0;
+
+			// Emit measure completion event
+			this.emit('measure', {
+				measureNumber: oldMeasure,
+				totalBeats: settings.timeSignature.upper
+			});
 		} else {
 			// Handle beat boundary
 			if ((this._pulse - 1) % subdivisionsInCurrentBeat === 0) {
@@ -386,16 +424,6 @@ export class Metronome {
 	}
 
 	/**
-   * Emits an event to all registered event listeners.
-   *
-   * @private
-   * @param {MetronomeEvent} eventType - The type of event to emit
-   */
-	private _emitEvent(eventType: MetronomeEvent): void {
-		this.eventListeners.forEach((listener) => listener(eventType));
-	}
-
-	/**
    * Cleans up all resources used by the metronome.
    * Stops all timers and clears all event listeners.
    *
@@ -405,7 +433,6 @@ export class Metronome {
    */
 	public dispose(): void {
 		this.timer.dispose();
-		this.eventListeners.clear();
-		this.pulseListeners.clear();
+		super.dispose();
 	}
 }
