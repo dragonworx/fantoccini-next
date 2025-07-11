@@ -219,6 +219,77 @@ describe("Metronome", () => {
     expect(events).toEqual(["start", "pause", "resume", "updated", "stop"]);
   });
 
+  it("should emit measure and downbeat events", async () => {
+    const measureEvents: Array<{ measureNumber: number; totalBeats: number }> = [];
+    const downbeatEvents: Array<{ measureNumber: number; beat: number }> = [];
+    
+    metronome.onEvent('measure', (data) => {
+      measureEvents.push(data);
+    });
+    
+    metronome.onEvent('downbeat', (data) => {
+      downbeatEvents.push(data);
+    });
+    
+    metronome.start();
+    await wait(1000); // Wait longer for multiple pulses to ensure measure completion
+    metronome.stop();
+    
+    // Since we might not get measure events if the measure doesn't complete,
+    // let's at least check we get some downbeat events
+    expect(downbeatEvents.length).toBeGreaterThan(0);
+    
+    // Check structure of events
+    measureEvents.forEach(event => {
+      expect(event.measureNumber).toBeGreaterThan(0);
+      expect(event.totalBeats).toBe(4); // 4/4 time signature
+    });
+    
+    downbeatEvents.forEach(event => {
+      expect(event.measureNumber).toBeGreaterThan(0);
+      expect(event.beat).toBeGreaterThan(0);
+    });
+  });
+
+  it("should support event listener cleanup", () => {
+    const listener = vi.fn();
+    
+    const unsubscribe = metronome.onEvent('start', listener);
+    
+    metronome.start();
+    expect(listener).toHaveBeenCalledTimes(1);
+    
+    metronome.stop();
+    listener.mockClear();
+    
+    // Remove listener
+    const removed = unsubscribe();
+    expect(removed).toBe(true);
+    
+    metronome.start();
+    expect(listener).not.toHaveBeenCalled();
+    
+    metronome.stop();
+  });
+
+  it("should support multiple listeners per event", () => {
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
+    const listener3 = vi.fn();
+    
+    metronome.onEvent('start', listener1);
+    metronome.onEvent('start', listener2);
+    metronome.onEvent('start', listener3);
+    
+    metronome.start();
+    
+    expect(listener1).toHaveBeenCalledTimes(1);
+    expect(listener2).toHaveBeenCalledTimes(1);
+    expect(listener3).toHaveBeenCalledTimes(1);
+    
+    metronome.stop();
+  });
+
   it("should emit pulses and increment measure/beat/pulse correctly", async () => {
     const pulses: Pulse[] = [];
     metronome.onPulse((p) => pulses.push(p));

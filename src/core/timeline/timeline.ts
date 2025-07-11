@@ -245,7 +245,7 @@ export class Timeline extends Observable implements ITimeline {
 	 * @returns The number of listeners that were called
 	 */
 	private emitEvent<K extends keyof TimelineEventMap>(event: K, payload: TimelineEventMap[K]): number {
-		return this.eventEmitter['emit'](event, payload);
+		return this.eventEmitter.emitEvent(event, payload);
 	}
 
 	// --- Playback Control ---

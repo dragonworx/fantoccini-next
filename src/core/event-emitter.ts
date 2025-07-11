@@ -130,14 +130,14 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 	 * 
 	 * @private
 	 */
-	private listeners = new Map<keyof TEventMap, Set<EventListener<any>>>();
+	private listeners = new Map<keyof TEventMap, Set<EventListener<TEventMap[keyof TEventMap]>>>();
 	
 	/**
 	 * Map of event names to their once-only listener sets.
 	 * 
 	 * @private
 	 */
-	private onceListeners = new Map<keyof TEventMap, Set<EventListener<any>>>();
+	private onceListeners = new Map<keyof TEventMap, Set<EventListener<TEventMap[keyof TEventMap]>>>();
 	
 	/**
 	 * History of emitted events for debugging and replay.
@@ -200,7 +200,7 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 		}
 		
 		const eventListeners = this.listeners.get(event)!;
-		eventListeners.add(listener);
+		eventListeners.add(listener as EventListener<TEventMap[keyof TEventMap]>);
 		
 		// Warn about many listeners if enabled
 		if (this.options.warnOnManyListeners && eventListeners.size > this.options.maxListeners!) {
@@ -235,7 +235,7 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 			this.onceListeners.set(event, new Set());
 		}
 		
-		this.onceListeners.get(event)!.add(listener);
+		this.onceListeners.get(event)!.add(listener as EventListener<TEventMap[keyof TEventMap]>);
 		
 		return () => this.offOnce(event, listener);
 	}
@@ -262,7 +262,7 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 			return false;
 		}
 		
-		return eventListeners.delete(listener);
+		return eventListeners.delete(listener as EventListener<TEventMap[keyof TEventMap]>);
 	}
 	
 	/**
@@ -282,7 +282,7 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 			return false;
 		}
 		
-		return eventListeners.delete(listener);
+		return eventListeners.delete(listener as EventListener<TEventMap[keyof TEventMap]>);
 	}
 	
 	/**
@@ -303,24 +303,24 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 			const eventListeners = this.listeners.get(event);
 			if (eventListeners) {
 				removedCount += eventListeners.size;
-				eventListeners.clear();
+				this.listeners.delete(event);
 			}
 			
 			const onceEventListeners = this.onceListeners.get(event);
 			if (onceEventListeners) {
 				removedCount += onceEventListeners.size;
-				onceEventListeners.clear();
+				this.onceListeners.delete(event);
 			}
 		} else {
 			// Remove all listeners
 			this.listeners.forEach(eventListeners => {
 				removedCount += eventListeners.size;
-				eventListeners.clear();
 			});
 			this.onceListeners.forEach(eventListeners => {
 				removedCount += eventListeners.size;
-				eventListeners.clear();
 			});
+			this.listeners.clear();
+			this.onceListeners.clear();
 		}
 		
 		return removedCount;
@@ -350,9 +350,9 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 		const eventListeners = this.listeners.get(event);
 		if (eventListeners) {
 			eventListeners.forEach(listener => {
+				calledCount++;
 				try {
-					listener(payload);
-					calledCount++;
+					(listener as EventListener<TEventMap[K]>)(payload);
 				} catch (error) {
 					console.error(`Error in event listener for '${String(event)}':`, error);
 				}
@@ -363,9 +363,9 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 		const onceEventListeners = this.onceListeners.get(event);
 		if (onceEventListeners) {
 			onceEventListeners.forEach(listener => {
+				calledCount++;
 				try {
-					listener(payload);
-					calledCount++;
+					(listener as EventListener<TEventMap[K]>)(payload);
 				} catch (error) {
 					console.error(`Error in once event listener for '${String(event)}':`, error);
 				}
@@ -374,6 +374,19 @@ export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap
 		}
 		
 		return calledCount;
+	}
+	
+	/**
+	 * Public method to emit events for composition scenarios.
+	 * This allows classes using EventEmitter via composition to emit events.
+	 * 
+	 * @template K - The event name type
+	 * @param event - The event name
+	 * @param payload - The event payload
+	 * @returns The number of listeners that were called
+	 */
+	public emitEvent<K extends keyof TEventMap>(event: K, payload: TEventMap[K]): number {
+		return this.emit(event, payload);
 	}
 	
 	/**

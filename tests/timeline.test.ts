@@ -700,6 +700,51 @@ describe("Timeline", () => {
       expect(child1.isPlaying).toBe(false);
       expect(child2.isPlaying).toBe(false);
     });
+
+    it("should emit playback events", () => {
+      const events: string[] = [];
+      
+      timeline.on('play', (data) => {
+        events.push('play');
+        expect(data.currentTime).toBe(0);
+        expect(data.cascade).toBe(true);
+      });
+      
+      timeline.on('pause', (data) => {
+        events.push('pause');
+        expect(data.currentTime).toBe(0);
+        expect(data.cascade).toBe(true);
+      });
+      
+      timeline.on('seek', (data) => {
+        events.push('seek');
+        expect(data.time).toBe(5);
+        expect(data.previousTime).toBe(0);
+        expect(data.cascade).toBe(true);
+      });
+      
+      timeline.play();
+      timeline.pause();
+      timeline.seek(5);
+      
+      expect(events).toEqual(['play', 'pause', 'seek']);
+    });
+
+    it("should emit time update events", () => {
+      const timeUpdateEvents: Array<{ currentTime: number; deltaTime: number }> = [];
+      
+      timeline.on('timeUpdate', (data) => {
+        timeUpdateEvents.push(data);
+      });
+      
+      // Root timeline update with delta time
+      timeline.play();
+      timeline.update(0.1); // 100ms delta
+      
+      expect(timeUpdateEvents).toHaveLength(1);
+      expect(timeUpdateEvents[0].currentTime).toBe(0.1);
+      expect(timeUpdateEvents[0].deltaTime).toBe(0.1);
+    });
   });
 
   describe("Hierarchy Management", () => {
@@ -713,6 +758,116 @@ describe("Timeline", () => {
       timeline.removeChild(child);
       expect(timeline.children).not.toContain(child);
       expect(child.parent).toBeNull();
+    });
+
+    it("should emit hierarchy events", () => {
+      const childEvents: Array<{ child: Timeline; childCount: number }> = [];
+      const objectEvents: Array<{ object: ITimelineObject; objectCount: number }> = [];
+      
+      timeline.on('childAdded', (data) => {
+        childEvents.push({ child: data.child as Timeline, childCount: data.childCount });
+      });
+      
+      timeline.on('childRemoved', (data) => {
+        childEvents.push({ child: data.child as Timeline, childCount: data.childCount });
+      });
+      
+      timeline.on('objectAdded', (data) => {
+        objectEvents.push(data);
+      });
+      
+      timeline.on('objectRemoved', (data) => {
+        objectEvents.push(data);
+      });
+      
+      const child = new Timeline();
+      const mockObject = {
+        update: vi.fn(),
+        dispose: vi.fn(),
+      } as unknown as ITimelineObject;
+      
+      timeline.addChild(child);
+      timeline.addObject(mockObject);
+      timeline.removeChild(child);
+      timeline.removeObject(mockObject);
+      
+      expect(childEvents).toHaveLength(2);
+      expect(childEvents[0].child).toBe(child);
+      expect(childEvents[0].childCount).toBe(1);
+      expect(childEvents[1].child).toBe(child);
+      expect(childEvents[1].childCount).toBe(0);
+      
+      expect(objectEvents).toHaveLength(2);
+      expect(objectEvents[0].object).toBe(mockObject);
+      expect(objectEvents[0].objectCount).toBe(1);
+      expect(objectEvents[1].object).toBe(mockObject);
+      expect(objectEvents[1].objectCount).toBe(0);
+    });
+
+    it("should emit property change events", () => {
+      const durationEvents: Array<{ oldDuration: number | null; newDuration: number | null }> = [];
+      const framerateEvents: Array<{ oldFramerate: number; newFramerate: number }> = [];
+      const timeScaleEvents: Array<{ oldTimeScale: number; newTimeScale: number }> = [];
+      
+      timeline.on('durationChange', (data) => {
+        durationEvents.push(data);
+      });
+      
+      timeline.on('framerateChange', (data) => {
+        framerateEvents.push(data);
+      });
+      
+      timeline.on('timeScaleChange', (data) => {
+        timeScaleEvents.push(data);
+      });
+      
+      timeline.duration = 10;
+      timeline.framerate = 30;
+      timeline.timeScale = 2;
+      
+      expect(durationEvents).toHaveLength(1);
+      expect(durationEvents[0].oldDuration).toBeNull();
+      expect(durationEvents[0].newDuration).toBe(10);
+      
+      expect(framerateEvents).toHaveLength(1);
+      expect(framerateEvents[0].oldFramerate).toBe(60);
+      expect(framerateEvents[0].newFramerate).toBe(30);
+      
+      expect(timeScaleEvents).toHaveLength(1);
+      expect(timeScaleEvents[0].oldTimeScale).toBe(1);
+      expect(timeScaleEvents[0].newTimeScale).toBe(2);
+    });
+
+    it("should support event listener cleanup", () => {
+      const listener = vi.fn();
+      
+      const unsubscribe = timeline.on('play', listener);
+      
+      timeline.play();
+      expect(listener).toHaveBeenCalledTimes(1);
+      
+      timeline.pause();
+      listener.mockClear();
+      
+      // Remove listener
+      const removed = unsubscribe();
+      expect(removed).toBe(true);
+      
+      timeline.play();
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it("should support once listeners", () => {
+      const listener = vi.fn();
+      
+      timeline.once('play', listener);
+      
+      timeline.play();
+      expect(listener).toHaveBeenCalledTimes(1);
+      
+      timeline.pause();
+      timeline.play();
+      expect(listener).toHaveBeenCalledTimes(1); // Should not be called again
     });
 
     it("should transfer child from one parent to another", () => {
