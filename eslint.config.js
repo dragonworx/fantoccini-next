@@ -17,6 +17,32 @@ export default [
 			'tests/**'
 		]
 	},
+	{
+		files: ['scripts/**/*.js'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: {
+				console: 'readonly',
+				process: 'readonly',
+				Buffer: 'readonly',
+				__dirname: 'readonly',
+				__filename: 'readonly',
+				global: 'readonly',
+				setTimeout: 'readonly',
+				clearTimeout: 'readonly',
+				setInterval: 'readonly',
+				clearInterval: 'readonly'
+			}
+		},
+		rules: {
+			'no-console': 'off',
+			'semi': ['error', 'always'],
+			'quotes': ['error', 'single'],
+			'indent': ['error', 'tab'],
+			'no-case-declarations': ['error', 'always'],
+		}
+	},
 	js.configs.recommended,
 	{
 		files: ['src/**/*.{js,ts}'],

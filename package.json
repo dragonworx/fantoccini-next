@@ -18,7 +18,8 @@
     "docs:better": "jsdoc -c jsdoc.better-docs.json",
     "docs:docdash": "jsdoc -c jsdoc.docdash.json",
     "docs:watch": "nodemon --watch src --ext js,ts --exec 'bun run docs'",
-    "docs:serve": "cd doc-gen && python -m http.server 8080"
+    "docs:serve": "cd doc-gen && python -m http.server 8080",
+    "commit": "node scripts/commit.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
