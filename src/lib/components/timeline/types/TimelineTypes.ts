@@ -203,54 +203,54 @@ export interface Rectangle {
  * Default timeline theme
  */
 export const DEFAULT_TIMELINE_THEME: TimelineTheme = {
-  colors: {
-    background: '#1a1a1a',
-    foreground: '#2a2a2a',
-    primary: '#4f8cff',
-    secondary: '#3a3a3a',
-    accent: '#ff6b6b',
-    border: '#333333',
-    text: '#ffffff',
-    textMuted: '#999999',
-    keyframe: '#4f8cff',
-    keyframeSelected: '#ff6b6b',
-    keyframeHover: '#64a3ff',
-    track: '#2a2a2a',
-    trackBorder: '#3a3a3a',
-    ruler: '#1a1a1a',
-    rulerText: '#cccccc',
-    playhead: '#ff6b6b',
-    recordingRegion: 'rgba(255, 107, 107, 0.2)',
-  },
+	colors: {
+		background: '#1a1a1a',
+		foreground: '#2a2a2a',
+		primary: '#4f8cff',
+		secondary: '#3a3a3a',
+		accent: '#ff6b6b',
+		border: '#333333',
+		text: '#ffffff',
+		textMuted: '#999999',
+		keyframe: '#4f8cff',
+		keyframeSelected: '#ff6b6b',
+		keyframeHover: '#64a3ff',
+		track: '#2a2a2a',
+		trackBorder: '#3a3a3a',
+		ruler: '#1a1a1a',
+		rulerText: '#cccccc',
+		playhead: '#ff6b6b',
+		recordingRegion: 'rgba(255, 107, 107, 0.2)',
+	},
   
-  keyframes: {
-    size: 8,
-    borderWidth: 1,
-    shape: 'diamond',
-  },
+	keyframes: {
+		size: 8,
+		borderWidth: 1,
+		shape: 'diamond',
+	},
   
-  tracks: {
-    height: 32,
-    spacing: 2,
-    borderWidth: 1,
-  },
+	tracks: {
+		height: 32,
+		spacing: 2,
+		borderWidth: 1,
+	},
   
-  ruler: {
-    height: 40,
-    majorTickHeight: 12,
-    minorTickHeight: 6,
-    textSize: 11,
-  },
+	ruler: {
+		height: 40,
+		majorTickHeight: 12,
+		minorTickHeight: 6,
+		textSize: 11,
+	},
 };
 
 /**
  * Default easing presets
  */
 export const EASING_PRESETS: EasingPreset[] = [
-  { name: 'Linear', type: 'Linear' },
-  { name: 'Step', type: 'Step' },
-  { name: 'Ease', type: 'Bezier', controlPoints: [0.25, 0.1, 0.25, 1] },
-  { name: 'Ease In', type: 'Bezier', controlPoints: [0.42, 0, 1, 1] },
-  { name: 'Ease Out', type: 'Bezier', controlPoints: [0, 0, 0.58, 1] },
-  { name: 'Ease In Out', type: 'Bezier', controlPoints: [0.42, 0, 0.58, 1] },
+	{ name: 'Linear', type: 'Linear' },
+	{ name: 'Step', type: 'Step' },
+	{ name: 'Ease', type: 'Bezier', controlPoints: [0.25, 0.1, 0.25, 1] },
+	{ name: 'Ease In', type: 'Bezier', controlPoints: [0.42, 0, 1, 1] },
+	{ name: 'Ease Out', type: 'Bezier', controlPoints: [0, 0, 0.58, 1] },
+	{ name: 'Ease In Out', type: 'Bezier', controlPoints: [0.42, 0, 0.58, 1] },
 ];

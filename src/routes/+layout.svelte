@@ -23,6 +23,10 @@
 		<nav>
 			<a href="/test/timeline-demo">Timeline</a>
 		</nav>
+
+		<nav>
+			<a href="/test/keyframe-optimiser-demo">Keyframe Optimiser</a>
+		</nav>
 	</header>
 
 	<main>
