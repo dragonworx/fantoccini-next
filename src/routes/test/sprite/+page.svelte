@@ -244,25 +244,35 @@
 			if (!selectedSprite || !isAnimating) return;
 
 			const elapsed = currentTime - startTime;
-			const progress = (elapsed / 3000) % 1; // 3 second cycle
+			const time = elapsed / 1000; // Convert to seconds for easier timing
 
-			// Animate rotation
-			selectedSprite.rotation = progress * 360;
+			// Calculate rotation values with different sin wave speeds
+			const rotationX = Math.sin(time * Math.PI) * 30; // ±30 degrees, 2 second cycle
+			const rotationY = Math.sin(time * Math.PI * 1.33) * 45; // ±45 degrees, 1.5 second cycle
+			const rotationZ = Math.sin(time * Math.PI * 2) * 60; // ±60 degrees, 1 second cycle
+			const rotation = Math.sin(time * Math.PI * 0.67) * 180; // ±180 degrees, 3 second cycle
 
-			// Animate position in a circle
+			// Calculate position oscillation
 			const centerX = properties.x || 150;
 			const centerY = properties.y || 150;
-			const radius = 50;
-			selectedSprite.x =
-				centerX + Math.cos(progress * Math.PI * 2) * radius;
-			selectedSprite.y =
-				centerY + Math.sin(progress * Math.PI * 2) * radius;
+			const x = centerX + Math.sin(time * Math.PI * 0.5) * 20; // gentle horizontal sway
+			const y = centerY + Math.cos(time * Math.PI * 0.7) * 15; // gentle vertical float
 
-			// Animate scale
-			selectedSprite.scaleX = 1 + Math.sin(progress * Math.PI * 4) * 0.3;
-			selectedSprite.scaleY = 1 + Math.cos(progress * Math.PI * 4) * 0.3;
+			// Calculate scale animation
+			const scaleX = 1 + Math.sin(time * Math.PI * 1.2) * 0.1;
+			const scaleY = 1 + Math.cos(time * Math.PI * 1.4) * 0.1;
 
-			selectedSprite.updateStyle();
+			// Apply transform directly to DOM element
+			const transform = `
+				translate3d(${x}px, ${y}px, 0)
+				rotateX(${rotationX}deg)
+				rotateY(${rotationY}deg)
+				rotateZ(${rotationZ}deg)
+				rotate(${rotation}deg)
+				scale(${scaleX}, ${scaleY})
+			`;
+
+			selectedSprite.el.style.transform = transform;
 			animationFrame = requestAnimationFrame(animate);
 		}
 
@@ -276,13 +286,9 @@
 			animationFrame = null;
 		}
 
-		// Reset to current property values
+		// Reset transform to current property values
 		if (selectedSprite) {
-			spriteProperties.forEach((prop) => {
-				if (properties[prop.key] !== undefined) {
-					(selectedSprite as any)[prop.key] = properties[prop.key];
-				}
-			});
+			selectedSprite.el.style.transform = '';
 			selectedSprite.updateStyle();
 		}
 	}
@@ -594,6 +600,21 @@
 
 		// Create DOM element examples
 		createDOMElementExamples();
+
+		// Add keyboard shortcut for testing (space key)
+		// eslint-disable-next-line no-undef
+		const handleKeydown = (e: KeyboardEvent) => {
+			if (e.code === 'Space') {
+				e.preventDefault();
+				toggleAnimation();
+			}
+		};
+		window.addEventListener('keydown', handleKeydown);
+
+		// Clean up event listener
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+		};
 	});
 
 	onDestroy(() => {
@@ -752,6 +773,7 @@
 				<!-- Action Buttons -->
 				<div class="button-row">
 					<h4>Animation & Controls</h4>
+					<p style="font-size: 12px; color: #aaa; margin: 5px 0;">Press SPACE to toggle animation</p>
 					<div class="button-group">
 						<button class="main-btn" on:click={toggleAnimation}>
 							{isAnimating ? 'Stop Animation' : 'Start Animation'}

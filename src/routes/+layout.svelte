@@ -36,6 +36,7 @@
         flex-direction: column;
         min-height: 100vh;
         box-shadow: 10px 10px 32px 0 rgba(0, 0, 0, 0.35);
+        color: white;
     }
 
     header {
