@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Sprite } from '../src/core/core/object/sprite';
+import { Sprite } from '../src/core/object/sprite';
 
 // Type for global scope
 declare const global: any;
@@ -86,7 +86,7 @@ describe('Sprite DOM Element Integration', () => {
 		testElement.style.width = '200px';
 		testElement.style.height = '150px';
 		testElement.style.backgroundColor = 'red';
-		
+
 		// Create child elements manually
 		const child1 = document.createElement('div');
 		child1.className = 'child1';
@@ -94,20 +94,20 @@ describe('Sprite DOM Element Integration', () => {
 		grandchild.className = 'grandchild';
 		grandchild.tagName = 'SPAN';
 		child1.appendChild(grandchild);
-		
+
 		const child2 = document.createElement('div');
 		child2.className = 'child2';
-		
+
 		testElement.appendChild(child1);
 		testElement.appendChild(child2);
-		
+
 		document.body.appendChild(testElement);
 	});
 
 	describe('Constructor with DOM Element', () => {
 		it('should create sprite from DOM element', () => {
 			const sprite = new Sprite({ element: testElement });
-			
+
 			expect(sprite.el).toBe(testElement);
 			expect(sprite.isFromDOMElement).toBe(true);
 			expect(sprite.preserveElementStyles).toBe(true);
@@ -115,34 +115,34 @@ describe('Sprite DOM Element Integration', () => {
 
 		it('should preserve element styles by default', () => {
 			const sprite = new Sprite({ element: testElement });
-			
+
 			expect(sprite.preserveElementStyles).toBe(true);
 		});
 
 		it('should allow disabling style preservation', () => {
-			const sprite = new Sprite({ 
-				element: testElement, 
-				preserveElementStyles: false 
+			const sprite = new Sprite({
+				element: testElement,
+				preserveElementStyles: false
 			});
-			
+
 			expect(sprite.preserveElementStyles).toBe(false);
 		});
 
 		it('should extract dimensions from element', () => {
 			const sprite = new Sprite({ element: testElement });
-			
+
 			// Default dimensions from getBoundingClientRect mock
 			expect(sprite.width).toBe(200);
 			expect(sprite.height).toBe(150);
 		});
 
 		it('should use provided dimensions over element dimensions', () => {
-			const sprite = new Sprite({ 
-				element: testElement, 
-				width: 300, 
-				height: 250 
+			const sprite = new Sprite({
+				element: testElement,
+				width: 300,
+				height: 250
 			});
-			
+
 			expect(sprite.width).toBe(300);
 			expect(sprite.height).toBe(250);
 		});
@@ -151,7 +151,7 @@ describe('Sprite DOM Element Integration', () => {
 	describe('fromDOMElement static method', () => {
 		it('should create sprite from DOM element', () => {
 			const sprite = Sprite.fromDOMElement(testElement);
-			
+
 			expect(sprite.el).toBe(testElement);
 			expect(sprite.isFromDOMElement).toBe(true);
 			expect(sprite.children.length).toBe(2); // Two child divs
@@ -159,11 +159,11 @@ describe('Sprite DOM Element Integration', () => {
 
 		it('should create sprite hierarchy from DOM tree', () => {
 			const sprite = Sprite.fromDOMElement(testElement);
-			
+
 			expect(sprite.children.length).toBe(2);
 			expect(sprite.children[0].el.className).toBe('child1');
 			expect(sprite.children[1].el.className).toBe('child2');
-			
+
 			// Check grandchild
 			expect(sprite.children[0].children.length).toBe(1);
 			expect(sprite.children[0].children[0].el.tagName).toBe('SPAN');
@@ -171,13 +171,13 @@ describe('Sprite DOM Element Integration', () => {
 
 		it('should not create child sprites when recursive is false', () => {
 			const sprite = Sprite.fromDOMElement(testElement, { recursive: false });
-			
+
 			expect(sprite.children.length).toBe(0);
 		});
 
 		it('should preserve element styles by default', () => {
 			const sprite = Sprite.fromDOMElement(testElement);
-			
+
 			expect(sprite.preserveElementStyles).toBe(true);
 			sprite.children.forEach(child => {
 				expect(child.preserveElementStyles).toBe(true);
@@ -185,10 +185,10 @@ describe('Sprite DOM Element Integration', () => {
 		});
 
 		it('should allow disabling style preservation', () => {
-			const sprite = Sprite.fromDOMElement(testElement, { 
-				preserveElementStyles: false 
+			const sprite = Sprite.fromDOMElement(testElement, {
+				preserveElementStyles: false
 			});
-			
+
 			expect(sprite.preserveElementStyles).toBe(false);
 			sprite.children.forEach(child => {
 				expect(child.preserveElementStyles).toBe(false);
@@ -197,11 +197,11 @@ describe('Sprite DOM Element Integration', () => {
 
 		it('should set up parent-child relationships correctly', () => {
 			const sprite = Sprite.fromDOMElement(testElement);
-			
+
 			sprite.children.forEach(child => {
 				expect(child.parent).toBe(sprite);
 			});
-			
+
 			// Check grandchild relationship
 			const grandchild = sprite.children[0].children[0];
 			expect(grandchild.parent).toBe(sprite.children[0]);
@@ -213,7 +213,7 @@ describe('Sprite DOM Element Integration', () => {
 			const rootSprite = Sprite.fromDOMElement(testElement);
 			const childSprite = rootSprite.children[0];
 			const grandchildSprite = childSprite.children[0];
-			
+
 			expect(Sprite.findDOMElementRoot(grandchildSprite)).toBe(rootSprite);
 			expect(Sprite.findDOMElementRoot(childSprite)).toBe(rootSprite);
 			expect(Sprite.findDOMElementRoot(rootSprite)).toBe(rootSprite);
@@ -222,11 +222,11 @@ describe('Sprite DOM Element Integration', () => {
 		it('should return the sprite itself if it has no DOM element parent', () => {
 			const regularSprite = new Sprite();
 			const domSprite = Sprite.fromDOMElement(testElement);
-			
+
 			// Add regular sprite as child of DOM sprite
 			regularSprite.parent = domSprite;
 			domSprite.children.push(regularSprite);
-			
+
 			expect(Sprite.findDOMElementRoot(regularSprite)).toBe(domSprite);
 		});
 	});
@@ -239,7 +239,7 @@ describe('Sprite DOM Element Integration', () => {
 			sprite.rotation = 45;
 			sprite.scaleX = 1.5;
 			sprite.updateStyle();
-			
+
 			expect(testElement.style.transform).toContain('translate3d(100px, 50px');
 			expect(testElement.style.transform).toContain('rotate(45deg)');
 			expect(testElement.style.transform).toContain('scaleX(1.5)');
@@ -247,27 +247,27 @@ describe('Sprite DOM Element Integration', () => {
 
 		it('should preserve original styles when preserveElementStyles is true', () => {
 			const originalBackground = testElement.style.backgroundColor;
-			const sprite = new Sprite({ 
-				element: testElement, 
+			const sprite = new Sprite({
+				element: testElement,
 				preserveElementStyles: true,
 				fill: { type: 'color', value: 'blue' }
 			});
 			sprite.updateStyle();
-			
+
 			// Original background should be preserved
 			expect(testElement.style.backgroundColor).toBe(originalBackground);
 		});
 
 		it('should apply new styles when preserveElementStyles is false', () => {
-			const sprite = new Sprite({ 
-				element: testElement, 
+			const sprite = new Sprite({
+				element: testElement,
 				preserveElementStyles: false,
 				fill: { type: 'color', value: 'blue' },
 				width: 300,
 				height: 250
 			});
 			sprite.updateStyle();
-			
+
 			expect(testElement.style.background).toBe('blue');
 			expect(testElement.style.width).toBe('300px');
 			expect(testElement.style.height).toBe('250px');
@@ -279,9 +279,9 @@ describe('Sprite DOM Element Integration', () => {
 				position: 'static'
 			}));
 			(global as any).getComputedStyle = (global as any).window.getComputedStyle;
-			
+
 			const sprite = new Sprite({ element: testElement });
-			
+
 			expect(testElement.style.position).toBe('relative');
 		});
 	});

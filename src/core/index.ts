@@ -4,11 +4,11 @@
  */
 
 // Export sprite system
-export * from './core/object/sprite';
-export * from './core/object/scene';
+export * from './object/sprite';
+export * from './object/scene';
 
 // Export timeline system
-export * from './core/timeline';
+export * from './timeline';
 
-// Export metronome system  
-export * from './core/metronome';
+// Export metronome system
+export * from './metronome';

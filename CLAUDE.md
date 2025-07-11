@@ -111,12 +111,12 @@ All source files MUST use the correct namespace based on their location:
 - Scene and Sprite system: `@namespace core` and `@memberof core`
 
 **Core Timeline Namespace (`@namespace core.timeline`)**
-- Files in `src/core/core/timeline/`
+- Files in `src/core/timeline/`
 - Use `@namespace core.timeline` for the main export file
 - Use `@memberof core.timeline` for classes and interfaces
 
 **Core Metronome Namespace (`@namespace core.metronome`)**
-- Files in `src/core/core/metronome/`
+- Files in `src/core/metronome/`
 - Use `@namespace core.metronome` for the main export file
 - Use `@memberof core.metronome` for classes and interfaces
 
