@@ -13,23 +13,7 @@
 		</nav>
 
 		<nav>
-			<a href="/func/sprite">Sprite</a>
-		</nav>
-
-		<nav>
-			<a href="/func/timeline">Timeline</a>
-		</nav>
-
-		<nav>
 			<a href="/func/keyframe-optimiser">Keyframe Optimiser</a>
-		</nav>
-
-		<nav>
-			<a href="/func/graphics">Graphics Demo</a>
-		</nav>
-
-		<nav>
-			<a href="/func/layout">Layout Engine</a>
 		</nav>
 	</header>
 
