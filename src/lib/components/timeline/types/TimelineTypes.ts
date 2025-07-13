@@ -4,9 +4,37 @@
  * @memberof editor
  */
 
-import type { ITimeline, IKeyframe, ITimelineObject } from '../../../core/timeline/index.js';
-import type { Sprite } from '../../../core/object/sprite.js';
-import type { Metronome } from '../../../core/metronome/index.js';
+import type { IClip, ClipKeyframe, AnimatableObject } from '../../animation/index.js';
+import type { Timeline } from '../../../../core/timeline/index.js';
+import type { Metronome } from '../../../../core/metronome/index.js';
+import type { Sprite } from '../../../../core/object/sprite.js';
+
+/**
+ * Basic types for timeline components
+ */
+export interface ITimeline {
+	duration: number;
+	framerate: number;
+	loop: boolean;
+	currentTime: number;
+	dispose(): void;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	on(event: string, listener: (...args: any[]) => void): void;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface IKeyframe<T = any> {
+	id: string;
+	time: number;
+	value: T;
+	interpolation: string;
+}
+
+export interface ITimelineObject {
+	id: string;
+	name: string;
+}
+
 
 /**
  * Timeline component event map with type-safe payloads
@@ -20,7 +48,7 @@ export interface TimelineComponentEventMap {
   'playback:seek': { time: number; frame: number };
   'playback:tick': { currentTime: number; deltaTime: number };
   'playback:complete': { duration: number };
-  
+
   // Keyframe Events
   'keyframe:add': { trackId: string; keyframeId: string; time: number; value: any };
   'keyframe:remove': { trackId: string; keyframeId: string };
@@ -28,18 +56,27 @@ export interface TimelineComponentEventMap {
   'keyframe:edit': { trackId: string; keyframeId: string; oldValue: any; newValue: any };
   'keyframe:select': { trackId: string; keyframeIds: string[]; multiSelect: boolean };
   'keyframe:deselect': { trackId: string; keyframeIds: string[] };
-  
+
   // Track Events
   'track:add': { trackId: string; property: string; sprite: Sprite };
   'track:remove': { trackId: string };
   'track:toggle': { trackId: string; visible: boolean };
   'track:mute': { trackId: string; muted: boolean };
-  
+
   // Recording Events
   'recording:start': { inTime: number; outTime: number };
   'recording:stop': { keyframesRecorded: number };
   'recording:capture': { time: number; property: string; value: any };
-  
+
+  // Clip Events
+  'clip:add': { trackId: string; clip: IClip };
+  'clip:remove': { trackId: string; clipId: string };
+  'clip:move': { trackId: string; clipId: string; oldStartOffset: number; newStartOffset: number };
+  'clip:trim': { trackId: string; clipId: string; newDuration: number };
+  'clip:regenerate': { trackId: string; clipId: string; keyframes: ClipKeyframe[] };
+  'clip:enabled': { trackId: string; clipId: string; enabled: boolean };
+  'clip:muted': { trackId: string; clipId: string; muted: boolean };
+
   // Viewport Events
   'viewport:pan': { offset: number; deltaX: number };
   'viewport:zoom': { scale: number; centerTime: number };
@@ -52,6 +89,7 @@ export interface TimelineComponentEventMap {
 export interface TimelineTrackConfig {
   id: string;
   sprite: Sprite;
+  animatableObject?: AnimatableObject;
   property: string;
   label: string;
   color: string;
@@ -59,6 +97,7 @@ export interface TimelineTrackConfig {
   muted: boolean;
   height: number;
   keyframes: IKeyframe<any>[];
+  clips?: IClip[];
 }
 
 /**
@@ -96,19 +135,19 @@ export interface TimelineTheme {
     playhead: string;
     recordingRegion: string;
   };
-  
+
   keyframes: {
     size: number;
     borderWidth: number;
     shape: 'diamond' | 'circle' | 'square';
   };
-  
+
   tracks: {
     height: number;
     spacing: number;
     borderWidth: number;
   };
-  
+
   ruler: {
     height: number;
     majorTickHeight: number;
@@ -121,9 +160,10 @@ export interface TimelineTheme {
  * Timeline component configuration
  */
 export interface TimelineConfig {
-  timeline: ITimeline;
+  timeline: Timeline;
   metronome: Metronome;
   sprites: Sprite[];
+  animatableObjects?: AnimatableObject[];
   width?: number;
   height?: number;
   theme?: Partial<TimelineTheme>;
@@ -222,19 +262,19 @@ export const DEFAULT_TIMELINE_THEME: TimelineTheme = {
 		playhead: '#ff6b6b',
 		recordingRegion: 'rgba(255, 107, 107, 0.2)',
 	},
-  
+
 	keyframes: {
 		size: 8,
 		borderWidth: 1,
 		shape: 'diamond',
 	},
-  
+
 	tracks: {
 		height: 32,
 		spacing: 2,
 		borderWidth: 1,
 	},
-  
+
 	ruler: {
 		height: 40,
 		majorTickHeight: 12,

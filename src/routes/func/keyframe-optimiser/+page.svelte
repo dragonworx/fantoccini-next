@@ -3,6 +3,8 @@
 	import { KeyframeOptimizer } from '../../../lib/components/keyframe-optimizer/KeyframeOptimizer';
 	import { DEFAULT_OPTIMIZATION_PARAMS } from '../../../lib/components/keyframe-optimizer/types/KeyframeOptimizerTypes';
 	import type { KeyframeOptimizationParams, OptimizationResult } from '../../../lib/components/keyframe-optimizer/types/KeyframeOptimizerTypes';
+	import { Clip } from '../../../lib/components/animation/Clip';
+	import type { IClip, RawDataPoint } from '../../../lib/components/animation/types/ClipTypes';
   
 	let optimizer: KeyframeOptimizer;
 	let isRecording = false;
@@ -20,6 +22,10 @@
 	let optimizationResult: OptimizationResult | null = null;
 	let rawDataPoints: Array<{ time: number; value: number }> = [];
 	let isOptimizing = false;
+	
+	// Clip system
+	let clips: IClip[] = [];
+	let currentClip: IClip | null = null;
   
 	// Demo modes
 	let demoMode: 'mouse' | 'sine' | 'noise' | 'step' = 'mouse';
@@ -142,8 +148,8 @@
 		const rawData = optimizer.stopRecording();
 		console.log('Raw data collected:', rawData);
     
-		// Optimize the data
-		optimizeData();
+		// Create a clip from the raw data
+		createClipFromRecording();
 	}
 	
 	function toggleRecording() {
@@ -155,11 +161,28 @@
 	}
   
 	function optimizeData() {
-		if (!optimizer.getRawData(currentProperty)) return;
+		if (!currentClip) return;
     
 		isOptimizing = true;
 		try {
-			optimizationResult = optimizer.optimizeToKeyframes(currentProperty, params);
+			// Generate keyframes from the current clip
+			const keyframes = currentClip.generateKeyframes(params);
+			
+			// Create optimization result for display
+			optimizationResult = {
+				keyframes: keyframes.map(kf => ({ time: kf.time, value: kf.value })),
+				originalCount: currentClip.rawData.length,
+				optimizedCount: keyframes.length,
+				compressionRatio: keyframes.length / currentClip.rawData.length,
+				processingTime: 0, // We don't have exact timing from clip
+				metadata: {
+					algorithm: 'Clip-based optimization',
+					parameters: params,
+					dataRange: { min: 0, max: 100 }, // Default range
+					timeRange: { start: 0, end: currentClip.duration }
+				}
+			};
+			
 			console.log('Optimization result:', optimizationResult);
 			drawOptimizedData();
 		} catch (error) {
@@ -173,12 +196,20 @@
 		optimizer.clearAllRawData();
 		rawDataPoints = [];
 		optimizationResult = null;
+		
+		// Clear clips
+		for (const clip of clips) {
+			clip.dispose();
+		}
+		clips = [];
+		currentClip = null;
+		
 		clearCanvases();
 	}
   
 	function handleMouseMove(event: MouseEvent) {
-		if (demoMode === 'mouse') {
-			const rect = event.currentTarget.getBoundingClientRect();
+		if (demoMode === 'mouse' && event.currentTarget) {
+			const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
 			mouseX = event.clientX - rect.left;
 			mouseY = event.clientY - rect.top;
 		}
@@ -311,6 +342,36 @@
 			optimizedCtx.clearRect(0, 0, optimizedCanvas.width, optimizedCanvas.height);
 		}
 	}
+	
+	function createClipFromRecording() {
+		if (rawDataPoints.length === 0) return;
+		
+		// Convert raw data points to RawDataPoint format
+		const clipRawData: RawDataPoint[] = rawDataPoints.map(point => ({
+			time: point.time,
+			value: point.value,
+			timestamp: Date.now()
+		}));
+		
+		// Create clip
+		const clipName = `Recording ${clips.length + 1} - ${currentProperty}`;
+		const clip = new Clip(0, recordingDuration, {
+			name: clipName,
+			startOffset: 0,
+			rawData: clipRawData,
+			optimizationParams: params,
+			enabled: true,
+			muted: false,
+			tags: ['recording', currentProperty]
+		});
+		
+		clips.push(clip);
+		clips = clips; // Trigger reactivity
+		currentClip = clip;
+		
+		// Optimize the clip
+		optimizeData();
+	}
   
 	// Reactive updates
 	$: if (optimizationResult) {
@@ -318,7 +379,7 @@
 	}
 	
 	// Re-optimize when parameters change
-	$: if (optimizer && rawDataPoints.length > 0 && !isRecording && (
+	$: if (currentClip && !isRecording && (
 		params.minTimeDelta || 
 		params.minValueChange || 
 		params.maxError || 
@@ -374,7 +435,7 @@
         
 				<button on:click={clearData}>Clear Data</button>
         
-				{#if !isRecording && rawDataPoints.length > 0}
+				{#if !isRecording && currentClip}
 					<button on:click={optimizeData}>Re-optimize</button>
 				{/if}
 			</div>
@@ -387,6 +448,25 @@
 				<div class="recording-info">
 					<p>Recording: {recordingDuration.toFixed(2)}s</p>
 					<p>Samples: {rawDataPoints.length}</p>
+				</div>
+			{:else if clips.length > 0}
+				<div class="clips-info">
+					<h3>Clips ({clips.length})</h3>
+					{#each clips as clip, index}
+						<div class="clip-item" class:active={clip === currentClip}>
+							<div class="clip-header">
+								<span class="clip-name">{clip.metadata.name}</span>
+								<button class="clip-select" on:click={() => { currentClip = clip; optimizeData(); }}>
+									{clip === currentClip ? 'Active' : 'Select'}
+								</button>
+							</div>
+							<div class="clip-details">
+								<span>Duration: {clip.duration.toFixed(2)}s</span>
+								<span>Points: {clip.rawData.length}</span>
+								<span>Keyframes: {clip.keyframes.length}</span>
+							</div>
+						</div>
+					{/each}
 				</div>
 			{/if}
       
@@ -470,7 +550,7 @@
       
 			<div class="canvas-container">
 				<div class="canvas-section">
-					<h3>Raw Data ({rawDataPoints.length} points)</h3>
+					<h3>Raw Data ({currentClip ? currentClip.rawData.length : rawDataPoints.length} points)</h3>
 					<canvas bind:this={rawCanvas} width="400" height="200" class="data-canvas raw-canvas"></canvas>
 				</div>
         
@@ -833,6 +913,68 @@
     color: #4f8cff;
     font-weight: normal;
     animation: pulse 1s infinite;
+  }
+  
+  .clips-info {
+    background: #333;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  
+  .clips-info h3 {
+    margin: 0 0 10px 0;
+    color: #4f8cff;
+    font-size: 14px;
+  }
+  
+  .clip-item {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 6px;
+    transition: all 0.2s;
+  }
+  
+  .clip-item.active {
+    border-color: #4f8cff;
+    background: #2a3a4a;
+  }
+  
+  .clip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  
+  .clip-name {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    flex: 1;
+  }
+  
+  .clip-select {
+    background: #4f8cff;
+    border: none;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  
+  .clip-select:hover {
+    background: #64a3ff;
+  }
+  
+  .clip-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #999;
   }
   
   @keyframes pulse {

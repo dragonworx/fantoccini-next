@@ -166,12 +166,12 @@
 			const properties = ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'alpha'];
       
 			for (const property of properties) {
-				const trackId = generateId(`track_${sprite.name || 'sprite'}_${property}`);
+				const trackId = generateId(`track_${sprite.id || 'sprite'}_${property}`);
 				const track: TimelineTrackConfig = {
 					id: trackId,
 					sprite,
 					property,
-					label: `${sprite.name || 'Sprite'} ${property}`,
+					label: `Sprite ${sprite.id} ${property}`,
 					color: getPropertyColor(property),
 					visible: true,
 					muted: false,

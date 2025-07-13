@@ -9,23 +9,27 @@
 		</nav>
 
 		<nav>
-			<a href="/test/metronome">Metronome</a>
+			<a href="/func/metronome">Metronome</a>
 		</nav>
 
 		<nav>
-			<a href="/test/sprite">Sprite</a>
+			<a href="/func/sprite">Sprite</a>
 		</nav>
 
 		<nav>
-			<a href="/test/sprite-simple">Sprite Simple</a>
+			<a href="/func/timeline">Timeline</a>
 		</nav>
 
 		<nav>
-			<a href="/test/timeline-demo">Timeline</a>
+			<a href="/func/keyframe-optimiser">Keyframe Optimiser</a>
 		</nav>
 
 		<nav>
-			<a href="/test/keyframe-optimiser-demo">Keyframe Optimiser</a>
+			<a href="/func/graphics">Graphics Demo</a>
+		</nav>
+
+		<nav>
+			<a href="/func/layout">Layout Engine</a>
 		</nav>
 	</header>
 
@@ -58,7 +62,7 @@
     }
 
     nav {
-        display: iinline-block;
+        display: inline-block;
         padding: 5px;
         border: 1px solid #555;
         background-color: #222;
