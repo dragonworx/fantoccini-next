@@ -55,31 +55,25 @@ The library uses a hierarchical component system built on Three.js for rendering
 
 ### Developer Experience
 - **TypeScript First**: Full type definitions and IntelliSense support
-- **Declarative API**: Component-based architecture
-- **Hot Module Replacement**: Development mode with live updates
-- **DevTools Integration**: Custom inspector for debugging
+- **Declarative API**: Ability to serialise layout descriptions in code
 
 ### UI Capabilities
 - **Layout System**: Flexbox-inspired responsive layouts
 - **Theming**: CSS-in-JS style theming with runtime switching
-- **Animation**: Built-in transition and animation support
 - **Text Rendering**: SDF-based text with full Unicode support
 
 ### Accessibility & Interaction
-- **Screen Reader Support**: Parallel DOM structure for assistive technologies
 - **Keyboard Navigation**: Full keyboard support with focus management
-- **Touch Support**: Multi-touch gestures and mobile optimization
-- **WCAG Compliance**: Built-in color contrast and sizing validators
+- Utilisation of [event-emitter](/src/core/event-emitter.ts) for event emitter functionality
 
 ### Performance Targets
-- **Initial Render**: < 100ms for 1000 elements
-- **Frame Rate**: 60fps with 10,000 visible elements
-- **Memory Usage**: < 100MB for typical applications
-- **Bundle Size**: Core < 50KB, full featured < 150KB gzipped
+- Dirty/modification tracking to elimate processing and traversal if no changes
 
 ## Architecture Overview
 
 The library follows a modular, layered architecture designed for performance and extensibility. See [Architecture Document](./ui-library-architecture.md) for detailed diagrams and relationships.
+
+The library will be available in [ui](/src/core/ui).
 
 ### Core Layers
 
