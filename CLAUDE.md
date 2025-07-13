@@ -35,21 +35,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 1. Core (`src/core/`)
 The foundation animation and timing engine - pure TypeScript with no UI dependencies:
 
-**Timeline System** (`src/core/timeline/`)
-- Observer pattern-based animation framework
-- Supports nested timelines with independent time contexts
-- Keyframe-based property animation
-- Frame-rate independent timing
-- Main classes: `Timeline`, `TimelineObject`, `Keyframe`
-
-**Sprite System** (`src/core/`)
-- 2D/3D visual elements for creating compositions
-- Hierarchical sprite trees with parent-child relationships
-- Transform properties: position, rotation, scale, skew
-- Fill styles: color, gradient, image
-- Dirty flag system for efficient updates
-- Main classes: `Sprite`, `Scene`
-
 **Metronome System** (`src/core/metronome/`)
 - Musical timing and rhythm generation
 - **Metronome** - Main class for tempo control and beat generation
@@ -91,12 +76,14 @@ The runtime for playing back content created in the editor:
 - Explicit function return types required
 - Explicit member accessibility required
 - Prefer arrow functions for callbacks
+- Do not use any, prefer strong explicit types
 
 ### File Organization
 - Core engine code in `src/core/`
 - Editor UI and runtime in `src/editor/`
 - Player runtime in `src/player/`
 - Test files in `tests/`
+- Functional demos in `src/routes/func/`
 - Documentation generated in `doc-gen/`
 
 ## Documentation Standards
@@ -109,11 +96,6 @@ All source files MUST use the correct namespace based on their location:
 **Core Namespace (`@namespace core`)**
 - Files in `src/core/` (except timeline and metronome subdirectories)
 - Scene and Sprite system: `@namespace core` and `@memberof core`
-
-**Core Timeline Namespace (`@namespace core.timeline`)**
-- Files in `src/core/timeline/`
-- Use `@namespace core.timeline` for the main export file
-- Use `@memberof core.timeline` for classes and interfaces
 
 **Core Metronome Namespace (`@namespace core.metronome`)**
 - Files in `src/core/metronome/`
