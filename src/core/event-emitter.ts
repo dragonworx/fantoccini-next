@@ -124,7 +124,7 @@ export interface EventEmitterOptions {
  *   console.log(`Playing at ${data.currentTime}s`); // TypeScript knows data structure
  * });
  */
-export abstract class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap> {
+export class EventEmitter<TEventMap extends BaseEventMap = BaseEventMap> {
 	/**
 	 * Map of event names to their listener sets.
 	 * 
