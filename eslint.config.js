@@ -1,8 +1,6 @@
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
-import sveltePlugin from 'eslint-plugin-svelte';
-import svelteParser from 'svelte-eslint-parser';
 
 export default [
 	{
@@ -106,64 +104,6 @@ export default [
 			'no-eval': 'error',
 			'no-implied-eval': 'error',
 			'prefer-arrow-callback': 'error'
-		}
-	},
-	{
-		files: ['src/**/*.svelte'],
-		languageOptions: {
-			parser: svelteParser,
-			parserOptions: {
-				parser: tsparser,
-				extraFileExtensions: ['.svelte'],
-				svelteFeatures: {
-					experimentalGenerics: true
-				}
-			},
-			globals: {
-				document: 'readonly',
-				window: 'readonly',
-				console: 'readonly',
-				HTMLElement: 'readonly',
-				HTMLDivElement: 'readonly',
-				HTMLDialogElement: 'readonly',
-				HTMLSelectElement: 'readonly',
-				Event: 'readonly',
-				AudioContext: 'readonly',
-				performance: 'readonly',
-				requestAnimationFrame: 'readonly',
-				cancelAnimationFrame: 'readonly',
-				setTimeout: 'readonly',
-				clearTimeout: 'readonly',
-				localStorage: 'readonly',
-				navigator: 'readonly'
-			}
-		},
-		plugins: {
-			svelte: sveltePlugin,
-			'@typescript-eslint': tseslint
-		},
-		rules: {
-			...sveltePlugin.configs.recommended.rules,
-			// Disable conflicting rules for Svelte
-			'indent': 'off',
-			'@typescript-eslint/indent': 'off',
-			// Apply code style rules
-			'quotes': ['error', 'single'],
-			'semi': ['error', 'always'],
-			'prefer-const': 'error',
-			'no-var': 'error',
-			// Svelte-specific indentation
-			'svelte/indent': ['error', {
-				indent: 'tab',
-				switchCase: 1,
-				alignAttributesVertically: false
-			}],
-			// Allow unused variables in Svelte (for component props)
-			'@typescript-eslint/no-unused-vars': ['warn', {
-				argsIgnorePattern: '^_',
-				varsIgnorePattern: '^_'
-			}],
-			'no-unused-vars': 'off'
 		}
 	}
 ];

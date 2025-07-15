@@ -56,7 +56,7 @@ export class MetronomeScheduler {
 	private _pulseController: ((pulse: Pulse) => void)[] = [];
 
 	/** Active timer reference */
-	private _timer: number | null = null;
+	private _timer: ReturnType<typeof setTimeout> | null = null;
 
 	/** Whether the scheduler is currently running */
 	private _running: boolean = false;
