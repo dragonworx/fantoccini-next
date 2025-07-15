@@ -99,6 +99,7 @@ export class BasicMaterial extends Material {
 		super(options);
 		
 		this.fillColor = new THREE.Color(options.color || 0xffffff);
+		this.fillOpacity = options.opacity ?? 1;
 		this.borderColor = new THREE.Color(options.borderColor || 0x000000);
 		
 		if (options.borderWidth !== undefined) {
@@ -115,7 +116,7 @@ export class BasicMaterial extends Material {
 		this._threeMaterial = new THREE.MeshBasicMaterial({
 			color: this.fillColor,
 			transparent: options.transparent ?? true,
-			opacity: options.opacity ?? 1,
+			opacity: this.fillOpacity,
 			side: options.side ?? THREE.DoubleSide,
 			depthWrite: options.depthWrite ?? true,
 			depthTest: options.depthTest ?? true,
@@ -188,6 +189,12 @@ export class BasicMaterial extends Material {
 	public setFillOpacity(opacity: number): void {
 		this.fillOpacity = Math.max(0, Math.min(1, opacity));
 		this._threeMaterial.opacity = this.fillOpacity;
+		
+		// Update shader uniform if using shader material
+		if (this._threeMaterial instanceof THREE.ShaderMaterial) {
+			this._threeMaterial.uniforms.opacity.value = this.fillOpacity;
+		}
+		
 		this.markNeedsUpdate();
 	}
 
@@ -354,7 +361,7 @@ export class BasicMaterial extends Material {
 				float dist = sdRoundedBox(uv * size, halfSize, borderRadius);
 				
 				// Fill
-				vec4 fillColor = vec4(color, opacity);
+				vec4 fillColor = vec4(color, 1.0);
 				if (hasMap) {
 					fillColor *= texture2D(map, vUv);
 				}
@@ -372,6 +379,9 @@ export class BasicMaterial extends Material {
 				// Apply rounded corners
 				float alpha = 1.0 - smoothstep(-0.5, 0.5, dist);
 				finalColor.a *= alpha;
+				
+				// Apply overall opacity to the entire sprite
+				finalColor.a *= opacity;
 				
 				gl_FragColor = finalColor;
 			}

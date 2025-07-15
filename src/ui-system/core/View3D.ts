@@ -42,6 +42,24 @@ export class View3D extends View {
 	};
 
 	/**
+	 * Raycaster for sprite interaction.
+	 * @private
+	 */
+	private raycaster = new THREE.Raycaster();
+
+	/**
+	 * Currently hovered sprite.
+	 * @private
+	 */
+	private hoveredSprite: any = null;
+
+	/**
+	 * Currently pressed sprite.
+	 * @private
+	 */
+	private pressedSprite: any = null;
+
+	/**
 	 * Orbit speed.
 	 * @private
 	 */
@@ -271,6 +289,19 @@ export class View3D extends View {
 	private onMouseDown(event: MouseEvent): void {
 		this.mouseState.lastPosition.set(event.clientX, event.clientY);
 		
+		// Check for sprite interaction first
+		const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+		
+		if (sprite && event.button === 0) {
+			this.pressedSprite = sprite;
+			// Emit mousedown event
+			sprite.events.emitEvent('mousedown', { 
+				sprite, 
+				event 
+			});
+			event.preventDefault();
+		}
+		
 		switch (event.button) {
 			case 0: // Left
 				this.mouseState.isLeftDown = true;
@@ -296,10 +327,34 @@ export class View3D extends View {
 		const deltaX = event.clientX - this.mouseState.lastPosition.x;
 		const deltaY = event.clientY - this.mouseState.lastPosition.y;
 		
-		if (this.mouseState.isLeftDown) {
+		if (this.mouseState.isLeftDown && !this.pressedSprite) {
 			this.orbit(deltaX, deltaY);
 		} else if (this.mouseState.isMiddleDown || (this.mouseState.isRightDown && event.shiftKey)) {
 			this.pan(deltaX, deltaY);
+		} else if (!this.mouseState.isLeftDown) {
+			// Check for hover when not dragging
+			const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+			
+			if (sprite !== this.hoveredSprite) {
+				// Exit previous hover
+				if (this.hoveredSprite) {
+					this.hoveredSprite.events.emitEvent('hover:exit', { 
+						sprite: this.hoveredSprite, 
+						event 
+					});
+				}
+				
+				// Enter new hover
+				if (sprite) {
+					sprite.events.emitEvent('hover:enter', { 
+						sprite, 
+						event, 
+						intersection: {} as THREE.Intersection 
+					});
+				}
+				
+				this.hoveredSprite = sprite;
+			}
 		}
 		
 		this.mouseState.lastPosition.set(event.clientX, event.clientY);
@@ -312,6 +367,26 @@ export class View3D extends View {
 	 * @returns {void}
 	 */
 	private onMouseUp(event: MouseEvent): void {
+		if (this.pressedSprite && event.button === 0) {
+			// Emit mouseup event
+			this.pressedSprite.events.emitEvent('mouseup', { 
+				sprite: this.pressedSprite, 
+				event 
+			});
+			
+			// Check if mouse is still over the pressed sprite for click
+			const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+			if (sprite === this.pressedSprite) {
+				sprite.events.emitEvent('click', { 
+					sprite, 
+					event, 
+					intersection: {} as THREE.Intersection 
+				});
+			}
+			
+			this.pressedSprite = null;
+		}
+		
 		switch (event.button) {
 			case 0:
 				this.mouseState.isLeftDown = false;
@@ -335,6 +410,43 @@ export class View3D extends View {
 		event.preventDefault();
 		const delta = event.deltaY > 0 ? 1 : -1;
 		this.dolly(delta);
+	}
+
+	/**
+	 * Gets sprite at screen position.
+	 * @private
+	 * @param {number} x - Screen X coordinate
+	 * @param {number} y - Screen Y coordinate
+	 * @returns {any | null} Sprite at position or null
+	 */
+	private getSpriteAtPosition(x: number, y: number): any | null {
+		const rect = this.canvas.getBoundingClientRect();
+		const mouse = new THREE.Vector2(
+			((x - rect.left) / rect.width) * 2 - 1,
+			-((y - rect.top) / rect.height) * 2 + 1
+		);
+		
+		this.raycaster.setFromCamera(mouse, this.camera);
+		
+		// Collect all sprites
+		const sprites: any[] = [];
+		this.scene.traverse((obj: any) => {
+			if ('markNeedsUpdate' in obj && 'mesh' in obj) {
+				sprites.push(obj);
+			}
+		});
+		
+		// Test for intersections
+		const meshes = sprites.map(s => s.mesh).filter(m => m !== null);
+		const intersects = this.raycaster.intersectObjects(meshes, false);
+		
+		if (intersects.length > 0) {
+			// Return the closest intersection
+			const mesh = intersects[0].object;
+			return sprites.find(s => s.mesh === mesh) || null;
+		}
+		
+		return null;
 	}
 
 	/**

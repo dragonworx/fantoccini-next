@@ -32,6 +32,7 @@ class UI3DDemo {
 	private view: View3D;
 	private sprites: Sprite3D[] = [];
 	private selectedSprite: Sprite3D | null = null;
+	private hoveredSprite: Sprite3D | null = null;
 	private animationSpeed = 1.0;
 	private activeAnimation: AnimationType = AnimationType.Rotate;
 	private gridHelper: THREE.GridHelper;
@@ -338,30 +339,90 @@ class UI3DDemo {
 	private setupSpriteInteraction(sprite: Sprite3D): void {
 		sprite.setCastShadow(true);
 		sprite.setReceiveShadow(true);
-
+		
+		// Store original material properties
+		const material = sprite.material?.threeMaterial as THREE.MeshPhysicalMaterial;
+		if (material) {
+			sprite.userData.originalEmissive = material.emissive.clone();
+			sprite.userData.originalEmissiveIntensity = material.emissiveIntensity || 0;
+			sprite.userData.originalOpacity = material.opacity;
+		}
+		
+		// Hover events - green emissive glow
 		sprite.events.on('hover:enter', () => {
-			if (sprite !== this.selectedSprite) {
-				sprite.scale.multiplyScalar(1.1);
+			this.hoveredSprite = sprite;
+			if (sprite !== this.selectedSprite && material) {
+				material.emissive = new THREE.Color(0x00ff88);
+				material.emissiveIntensity = 0.3;
 			}
 		});
-
+		
 		sprite.events.on('hover:exit', () => {
-			if (sprite !== this.selectedSprite) {
-				sprite.scale.divideScalar(1.1);
+			if (this.hoveredSprite === sprite) {
+				this.hoveredSprite = null;
 			}
+			if (sprite !== this.selectedSprite && material) {
+				material.emissive = sprite.userData.originalEmissive;
+				material.emissiveIntensity = sprite.userData.originalEmissiveIntensity;
+			}
+		});
+		
+		// Mouse down/up events - fade effect
+		sprite.events.on('mousedown', () => {
+			if (material) {
+				material.opacity = 0.6;
+				material.transparent = true;
+			}
+		});
+		
+		sprite.events.on('mouseup', () => {
+			if (material) {
+				// Restore original opacity
+				material.opacity = sprite.userData.originalOpacity;
+				material.transparent = sprite.userData.originalOpacity < 1;
+				
+				// Restore emissive based on current state
+				if (sprite === this.selectedSprite) {
+					// Keep selection emissive
+					material.emissive = new THREE.Color(0x00ccff);
+					material.emissiveIntensity = 0.5;
+				} else if (sprite === this.hoveredSprite) {
+					// Keep hover emissive
+					material.emissive = new THREE.Color(0x00ff88);
+					material.emissiveIntensity = 0.3;
+				} else {
+					// Restore original emissive
+					material.emissive = sprite.userData.originalEmissive;
+					material.emissiveIntensity = sprite.userData.originalEmissiveIntensity;
+				}
+			}
+		});
+		
+		// Click event
+		sprite.events.on('click', () => {
+			this.selectSprite(sprite);
 		});
 	}
 
 	private selectSprite(sprite: Sprite3D | null): void {
 		// Deselect previous
 		if (this.selectedSprite) {
-			this.selectedSprite.scale.divideScalar(1.2);
+			const prevMaterial = this.selectedSprite.material?.threeMaterial as THREE.MeshPhysicalMaterial;
+			if (prevMaterial) {
+				prevMaterial.emissive = this.selectedSprite.userData.originalEmissive;
+				prevMaterial.emissiveIntensity = this.selectedSprite.userData.originalEmissiveIntensity;
+			}
 		}
 
 		this.selectedSprite = sprite;
 
 		if (sprite) {
-			sprite.scale.multiplyScalar(1.2);
+			const material = sprite.material?.threeMaterial as THREE.MeshPhysicalMaterial;
+			if (material) {
+				// Blue emissive for selection
+				material.emissive = new THREE.Color(0x00ccff);
+				material.emissiveIntensity = 0.5;
+			}
 			
 			// Update info panel
 			this.selectedInfoEl.classList.remove('hidden');
@@ -458,8 +519,9 @@ class UI3DDemo {
 	}
 
 	private handleResize(): void {
-		const width = window.innerWidth;
-		const height = window.innerHeight;
+		const container = document.getElementById('canvas-container')!;
+		const width = container.clientWidth;
+		const height = container.clientHeight;
 		this.view.resize(width, height);
 	}
 

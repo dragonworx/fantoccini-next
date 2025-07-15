@@ -9,6 +9,8 @@ import type { Material } from '../materials/Material';
  */
 export interface SpriteEventMap {
 	'click': { sprite: Sprite; event: MouseEvent; intersection: THREE.Intersection };
+	'mousedown': { sprite: Sprite; event: MouseEvent };
+	'mouseup': { sprite: Sprite; event: MouseEvent };
 	'hover:enter': { sprite: Sprite; event: MouseEvent; intersection: THREE.Intersection };
 	'hover:exit': { sprite: Sprite; event: MouseEvent };
 	'drag:start': { sprite: Sprite; event: MouseEvent; startPosition: THREE.Vector2 };

@@ -305,6 +305,12 @@ export class View2D extends View {
 		
 		if (sprite && event.button === 0 && !event.shiftKey) {
 			this.pressedSprite = sprite;
+			// Emit mousedown event immediately
+			console.log('View2D: Emitting mousedown event');
+			sprite.events.emitEvent('mousedown', { 
+				sprite, 
+				event 
+			});
 			sprite.events.emitEvent('drag:start', { 
 				sprite, 
 				event, 
@@ -395,6 +401,13 @@ export class View2D extends View {
 					intersection: {} as THREE.Intersection 
 				});
 			}
+			
+			// Emit mouseup event
+			console.log('View2D: Emitting mouseup event');
+			this.pressedSprite.events.emitEvent('mouseup', { 
+				sprite: this.pressedSprite, 
+				event 
+			});
 			
 			// End drag
 			this.pressedSprite.events.emitEvent('drag:end', { 

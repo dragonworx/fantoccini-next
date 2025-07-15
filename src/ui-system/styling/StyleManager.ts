@@ -235,7 +235,7 @@ export class StyleManager {
 				
 				float dist = sdRoundedBox(uv * size, halfSize, borderRadius);
 				
-				vec4 color = vec4(backgroundColor, backgroundOpacity);
+				vec4 color = vec4(backgroundColor, 1.0);
 		`;
 		
 		if (style.borderWidth && style.borderWidth > 0) {
@@ -260,6 +260,9 @@ export class StyleManager {
 		shader += `
 				float alpha = 1.0 - smoothstep(-0.5, 0.5, dist);
 				color.a *= alpha;
+				
+				// Apply overall opacity
+				color.a *= backgroundOpacity;
 				
 				gl_FragColor = color;
 			}

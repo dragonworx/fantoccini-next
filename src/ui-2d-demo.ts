@@ -22,6 +22,7 @@ class UI2DDemo {
 	private view: View2D;
 	private sprites: Sprite2D[] = [];
 	private selectedSprite: Sprite2D | null = null;
+	private hoveredSprite: Sprite2D | null = null;
 	private animationId: number | null = null;
 	private lastTime = 0;
 	private frameCount = 0;
@@ -206,22 +207,19 @@ class UI2DDemo {
 
 		// Mouse hover events - only change border
 		sprite.events.on('hover:enter', () => {
-			console.log('Hover enter event fired for sprite');
+			this.hoveredSprite = sprite;
 			// Don't change hover state if this is the selected sprite
 			if (sprite === this.selectedSprite) {
-				console.log('Sprite is selected, skipping hover style');
 				return;
 			}
 			
 			const currentStyle = sprite.getStyle()!;
-			console.log('Current style:', currentStyle);
 			const hoverStyle = {
 				...currentStyle,
 				borderWidth: Math.max(currentStyle.borderWidth || 0, 3), // At least 3px for visibility
 				borderColor: '#00ff88',
 				borderOpacity: 1
 			};
-			console.log('Applying hover style:', hoverStyle);
 			sprite.setStyle(hoverStyle);
 			const newMaterial = StyleManager.getInstance().compileStyle(hoverStyle);
 			sprite.material = newMaterial;
@@ -229,42 +227,58 @@ class UI2DDemo {
 		});
 
 		sprite.events.on('hover:exit', () => {
-			console.log('Hover exit event fired for sprite');
+			if (this.hoveredSprite === sprite) {
+				this.hoveredSprite = null;
+			}
 			if (sprite !== this.selectedSprite) {
-				console.log('Restoring base style:', sprite.userData.baseStyle);
 				sprite.setStyle(sprite.userData.baseStyle);
 				sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
 				sprite.update(); // Force immediate update
 			}
 		});
 
-		// Mouse down/up events - visual press effect with alpha
-		sprite.events.on('drag:start', () => {
-			sprite.scale.set(0.95, 0.95, 1);
+		// Mouse down/up events - fade effect
+		sprite.events.on('mousedown', () => {
+			console.log('MOUSEDOWN event fired for sprite:', sprite.userData.name);
 			const currentStyle = sprite.getStyle()!;
 			const pressStyle = {
 				...currentStyle,
-				backgroundOpacity: 0.5 // 50% opacity when pressed
+				backgroundOpacity: 0.6 // 60% opacity when pressed
 			};
+			console.log('Setting opacity to 0.6');
 			sprite.setStyle(pressStyle);
 			sprite.material = StyleManager.getInstance().compileStyle(pressStyle);
 			sprite.update();
 		});
 
-		sprite.events.on('drag:end', () => {
-			sprite.scale.set(1, 1, 1);
+		sprite.events.on('mouseup', () => {
+			console.log('MOUSEUP event fired for sprite:', sprite.userData.name);
 			if (sprite === this.selectedSprite) {
-				// Keep focus style
+				// Restore to focus style
 				const focusStyle = {
 					...sprite.userData.baseStyle,
 					borderWidth: 4,
 					borderColor: '#00ccff',
 					borderOpacity: 1,
-					backgroundOpacity: 1
+					backgroundOpacity: 1 // Restore full opacity
 				};
+				console.log('Restoring to focus style with opacity 1');
 				sprite.setStyle(focusStyle);
 				sprite.material = StyleManager.getInstance().compileStyle(focusStyle);
+			} else if (sprite === this.hoveredSprite) {
+				// Restore to hover style
+				const hoverStyle = {
+					...sprite.userData.baseStyle,
+					borderWidth: Math.max(sprite.userData.baseStyle.borderWidth || 0, 3),
+					borderColor: '#00ff88',
+					borderOpacity: 1
+				};
+				console.log('Restoring to hover style with opacity 1');
+				sprite.setStyle(hoverStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(hoverStyle);
 			} else {
+				// Restore to base style
+				console.log('Restoring to base style with opacity 1');
 				sprite.setStyle(sprite.userData.baseStyle);
 				sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
 			}
