@@ -28,45 +28,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Tests are located in `/tests/` directory
 - Use `vitest run` for CI/single run execution
 
-## Project Architecture
-
-**Fantoccini** is conceptually divided into three main parts:
-
-### 1. Core (`src/core/`)
-The foundation animation and timing engine - pure TypeScript with no UI dependencies:
-
-**Metronome System** (`src/core/metronome/`)
-- Musical timing and rhythm generation
-- **Metronome** - Main class for tempo control and beat generation
-- **Rhythm** - Defines BPM, time signatures, and subdivisions
-- **TimeSignature** - Musical time signature representation
-- **Pulse** - Individual beat events with measure/beat information
-- **MetronomeScheduler** - Precise timing scheduler for audio applications
-
-### 2. Editor (`src/editor/`)
-The authoring environment built with SvelteKit - provides UI for creating and editing animations:
-- SvelteKit application for the editor interface
-- Svelte components for UI elements
-- Editor runtime for managing the authoring experience
-- Tools for creating and editing animations
-- Currently located in `src/lib/` and `src/routes/` but will be moved to `src/editor/`
-
-### 3. Player (`src/player/`)
-The runtime for playing back content created in the editor:
-- Uses the Core engine to run animations
-- Provides a way to run content without the editor UI
-- Lightweight runtime that depends only on Core
-- Will be a separate module for embedding animations
-- Not yet implemented - currently editor and player are combined
-
-## Current File Structure (Transitional)
-
-**Note**: The file structure is currently organized as:
-- `src/core/` - Core animation engine (timeline, sprite, metronome systems)
-- `src/lib/components/` - Editor UI components (will move to `src/editor/`)
-- `src/routes/` - Editor runtime and pages (will move to `src/editor/`)
-- `src/player/` - Player runtime (to be created)
-
 ## Code Style Guidelines
 
 ### TypeScript/JavaScript
@@ -78,37 +39,9 @@ The runtime for playing back content created in the editor:
 - Prefer arrow functions for callbacks
 - Do not use any, prefer strong explicit types
 
-### File Organization
-- Core engine code in `src/core/`
-- Editor UI and runtime in `src/editor/`
-- Player runtime in `src/player/`
-- Test files in `tests/`
-- Functional demos in `src/routes/func/`
-- Documentation generated in `doc-gen/`
-
 ## Documentation Standards
 
 This project uses comprehensive JSDoc documentation with a three-part namespace architecture:
-
-### Namespace Structure
-All source files MUST use the correct namespace based on their location:
-
-**Core Namespace (`@namespace core`)**
-- Files in `src/core/` (except timeline and metronome subdirectories)
-- Scene and Sprite system: `@namespace core` and `@memberof core`
-
-**Core Metronome Namespace (`@namespace core.metronome`)**
-- Files in `src/core/metronome/`
-- Use `@namespace core.metronome` for the main export file
-- Use `@memberof core.metronome` for classes and interfaces
-
-**Editor Namespace (`@namespace editor`)**
-- Files in `src/lib/components/` and `src/routes/`
-- Use `@namespace editor` and `@memberof editor`
-
-**Player Namespace (`@namespace player`)**
-- Future files in `src/player/` (when created)
-- Use `@namespace player` and `@memberof player`
 
 ### Documentation Requirements
 - Include detailed `@example` blocks for public APIs
