@@ -16,6 +16,9 @@ export default defineConfig({
         // Demo page entry point
         demo: resolve(__dirname, 'demo.html'),
         
+        // Three.js demo page
+        threejs: resolve(__dirname, 'threejs-demo.html'),
+        
         // Example: Additional entry points (uncomment and modify as needed)
         // player: resolve(__dirname, 'player.html'),
         
