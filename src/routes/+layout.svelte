@@ -15,6 +15,10 @@
 		<nav>
 			<a href="/func/keyframe-optimiser">Keyframe Optimiser</a>
 		</nav>
+
+		<nav>
+			<a href="/func/ui">UI Library</a>
+		</nav>
 	</header>
 
 	<main>
