@@ -306,7 +306,9 @@ export class StyleManager {
 			borderColor: { value: borderColor },
 			borderOpacity: { value: style.borderOpacity ?? 1 },
 			borderRadius: { value: style.borderRadius ?? 0 },
-			size: { value: new THREE.Vector2(100, 100) }
+			size: { value: new THREE.Vector2(100, 100) },
+			map: { value: style.backgroundTexture || new THREE.Texture() },
+			hasMap: { value: style.backgroundTexture !== null && style.backgroundTexture !== undefined }
 		};
 	}
 }

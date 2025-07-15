@@ -125,6 +125,11 @@ export class BasicMaterial extends Material {
 		if (options.map) {
 			this.fillTexture = options.map;
 		}
+		
+		// Upgrade to shader material if we have borders or rounded corners
+		if (this.borderWidth > 0 || this.borderRadius > 0) {
+			this.upgradeToShaderMaterial();
+		}
 	}
 
 	/**
@@ -327,6 +332,7 @@ export class BasicMaterial extends Material {
 			uniform vec3 color;
 			uniform float opacity;
 			uniform sampler2D map;
+			uniform bool hasMap;
 			uniform float borderWidth;
 			uniform vec3 borderColor;
 			uniform float borderOpacity;
@@ -349,7 +355,7 @@ export class BasicMaterial extends Material {
 				
 				// Fill
 				vec4 fillColor = vec4(color, opacity);
-				if (map != null) {
+				if (hasMap) {
 					fillColor *= texture2D(map, vUv);
 				}
 				
@@ -383,7 +389,8 @@ export class BasicMaterial extends Material {
 			...this._uniforms,
 			color: { value: this.fillColor },
 			opacity: { value: this.fillOpacity },
-			map: { value: this.fillTexture },
+			map: { value: this.fillTexture || new THREE.Texture() },
+			hasMap: { value: this.fillTexture !== null },
 			borderWidth: { value: this.borderWidth },
 			borderColor: { value: this.borderColor },
 			borderOpacity: { value: this.borderOpacity },

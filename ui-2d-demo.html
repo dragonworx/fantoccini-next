@@ -151,13 +151,18 @@
 			<div>Elements: <span id="element-count">0</span></div>
 			<div>FPS: <span id="fps">0</span></div>
 			<div>Render Time: <span id="render-time">0</span>ms</div>
+			<div id="selected-info" style="color: #00ccff; margin-top: 10px; display: none;">
+				Selected: <span id="selected-pos">-</span>
+			</div>
 		</div>
 	</div>
 	
 	<a href="/" class="back-link">← Back to demos</a>
 	
 	<div class="help-text">
-		<kbd>Shift</kbd> + <kbd>Drag</kbd> to pan • <kbd>Scroll</kbd> to zoom • <kbd>Click</kbd> elements to select
+		<kbd>Click</kbd> to select • <kbd>Arrow Keys</kbd> to move • <kbd>Space</kbd> to rotate • <kbd>Delete</kbd> to remove • <kbd>Any Key</kbd> for visual feedback
+		<br>
+		<small>Mouse over for hover effects • Click and drag for press effects • Selected element has blue border</small>
 	</div>
 	
 	<script type="module" src="/src/ui-2d-demo.ts"></script>

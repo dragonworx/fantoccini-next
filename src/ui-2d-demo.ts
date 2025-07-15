@@ -21,6 +21,7 @@ class UI2DDemo {
 	private scene: Scene;
 	private view: View2D;
 	private sprites: Sprite2D[] = [];
+	private selectedSprite: Sprite2D | null = null;
 	private animationId: number | null = null;
 	private lastTime = 0;
 	private frameCount = 0;
@@ -34,7 +35,9 @@ class UI2DDemo {
 	public constructor() {
 		// Get container
 		const container = document.getElementById('canvas-container');
-		if (!container) throw new Error('Container not found');
+		if (!container) {
+			throw new Error('Container not found');
+		}
 
 		// Create scene
 		this.scene = new Scene();
@@ -59,6 +62,9 @@ class UI2DDemo {
 		// Setup scene events
 		this.setupSceneEvents();
 
+		// Setup keyboard events
+		this.setupKeyboardEvents();
+
 		// Start render loop
 		this.animate();
 
@@ -73,7 +79,7 @@ class UI2DDemo {
 		});
 
 		document.getElementById('add-many')!.addEventListener('click', () => {
-			this.addManyElements(50);
+			this.addManyElements(20);
 		});
 
 		document.getElementById('clear-all')!.addEventListener('click', () => {
@@ -119,8 +125,23 @@ class UI2DDemo {
 	}
 
 	private addRandomElement(x?: number, y?: number): Sprite2D {
-		const size = 40 + Math.random() * 80;
-		const sprite = new Sprite2D(size, size);
+		// More varied sizes
+		const sizeOptions = [
+			40,  // Small
+			60,  // Medium-small
+			80,  // Medium
+			100, // Medium-large
+			120, // Large
+			Math.random() * 80 + 40, // Random between 40-120
+		];
+		const size = sizeOptions[Math.floor(Math.random() * sizeOptions.length)];
+		
+		// Occasionally make rectangles instead of squares
+		const isRectangle = Math.random() > 0.7;
+		const width = size;
+		const height = isRectangle ? size * (0.5 + Math.random() * 1.0) : size;
+		
+		const sprite = new Sprite2D(width, height);
 		
 		// Random position if not specified
 		if (x === undefined || y === undefined) {
@@ -131,40 +152,149 @@ class UI2DDemo {
 		
 		sprite.position.set(x, y, 0);
 
-		// Random color and style
+		// Random color and base style
 		const color = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
-		const hasBorder = Math.random() > 0.5;
-		const borderRadius = Math.random() > 0.7 ? Math.random() * 20 : 0;
 		
-		sprite.setStyle({
+		// More varied border styles
+		const borderStyles = [
+			{ width: 0, color: '#ffffff', opacity: 1.0 }, // No border
+			{ width: 1, color: '#ffffff', opacity: 1.0 }, // Thin white
+			{ width: 2, color: '#000000', opacity: 1.0 }, // Medium black
+			{ width: 3, color: '#ff0000', opacity: 1.0 }, // Medium red
+			{ width: 4, color: '#0000ff', opacity: 1.0 }, // Thick blue
+			{ width: 5, color: '#ffff00', opacity: 1.0 }, // Thick yellow
+			{ width: 6, color: '#ff00ff', opacity: 1.0 }, // Extra thick magenta
+			{ width: 2, color: color, opacity: 0.5 }, // Semi-transparent same color
+			{ width: 8, color: '#ffffff', opacity: 0.3 }, // Thick semi-transparent white
+			{ width: 4, color: '#000000', opacity: 0.5 }, // Medium semi-transparent black
+		];
+		
+		const borderStyle = borderStyles[Math.floor(Math.random() * borderStyles.length)];
+		
+		// More varied border radius options
+		const minDimension = Math.min(width, height);
+		const radiusOptions = [
+			0,    // Square
+			4,    // Slightly rounded
+			8,    // Rounded
+			12,   // More rounded
+			16,   // Very rounded
+			24,   // Extra rounded
+			minDimension / 2, // Fully round (circle/ellipse)
+			Math.random() * minDimension / 3, // Random radius
+		];
+		
+		const borderRadius = radiusOptions[Math.floor(Math.random() * radiusOptions.length)];
+		
+		// Store base style for the sprite - always 100% opacity
+		const baseStyle = {
 			backgroundColor: color,
-			backgroundOpacity: 0.8 + Math.random() * 0.2,
-			borderWidth: hasBorder ? 2 + Math.random() * 3 : 0,
-			borderColor: '#ffffff',
-			borderOpacity: 0.8,
+			backgroundOpacity: 1.0,
+			borderWidth: borderStyle.width,
+			borderColor: borderStyle.color,
+			borderOpacity: borderStyle.opacity,
 			borderRadius: borderRadius
-		});
-
+		};
+		
+		sprite.setStyle(baseStyle);
+		sprite.userData.baseStyle = baseStyle;
+		
 		// Apply style through material
 		const material = StyleManager.getInstance().compileStyle(sprite.getStyle()!);
 		sprite.material = material;
 
-		// Add hover interaction
+		// Mouse hover events - only change border
 		sprite.events.on('hover:enter', () => {
-			sprite.scale.set(1.1, 1.1, 1);
+			console.log('Hover enter event fired for sprite');
+			// Don't change hover state if this is the selected sprite
+			if (sprite === this.selectedSprite) {
+				console.log('Sprite is selected, skipping hover style');
+				return;
+			}
+			
+			const currentStyle = sprite.getStyle()!;
+			console.log('Current style:', currentStyle);
+			const hoverStyle = {
+				...currentStyle,
+				borderWidth: Math.max(currentStyle.borderWidth || 0, 3), // At least 3px for visibility
+				borderColor: '#00ff88',
+				borderOpacity: 1
+			};
+			console.log('Applying hover style:', hoverStyle);
+			sprite.setStyle(hoverStyle);
+			const newMaterial = StyleManager.getInstance().compileStyle(hoverStyle);
+			sprite.material = newMaterial;
+			sprite.update(); // Force immediate update
 		});
 
 		sprite.events.on('hover:exit', () => {
-			sprite.scale.set(1, 1, 1);
+			console.log('Hover exit event fired for sprite');
+			if (sprite !== this.selectedSprite) {
+				console.log('Restoring base style:', sprite.userData.baseStyle);
+				sprite.setStyle(sprite.userData.baseStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
+				sprite.update(); // Force immediate update
+			}
 		});
 
+		// Mouse down/up events - visual press effect with alpha
+		sprite.events.on('drag:start', () => {
+			sprite.scale.set(0.95, 0.95, 1);
+			const currentStyle = sprite.getStyle()!;
+			const pressStyle = {
+				...currentStyle,
+				backgroundOpacity: 0.5 // 50% opacity when pressed
+			};
+			sprite.setStyle(pressStyle);
+			sprite.material = StyleManager.getInstance().compileStyle(pressStyle);
+			sprite.update();
+		});
+
+		sprite.events.on('drag:end', () => {
+			sprite.scale.set(1, 1, 1);
+			if (sprite === this.selectedSprite) {
+				// Keep focus style
+				const focusStyle = {
+					...sprite.userData.baseStyle,
+					borderWidth: 4,
+					borderColor: '#00ccff',
+					borderOpacity: 1,
+					backgroundOpacity: 1
+				};
+				sprite.setStyle(focusStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(focusStyle);
+			} else {
+				sprite.setStyle(sprite.userData.baseStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
+			}
+			sprite.update();
+		});
+
+		// Click event - focus selection
 		sprite.events.on('click', () => {
-			const newColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
-			sprite.setStyle({
-				...sprite.getStyle()!,
-				backgroundColor: newColor
-			});
-			sprite.material = StyleManager.getInstance().compileStyle(sprite.getStyle()!);
+			this.selectSprite(sprite);
+		});
+
+		// Focus/blur events
+		sprite.events.on('focus', () => {
+			console.log(`Sprite focused at position (${sprite.position.x.toFixed(1)}, ${sprite.position.y.toFixed(1)})`);
+			const focusStyle = {
+				...sprite.userData.baseStyle,
+				borderWidth: 4,
+				borderColor: '#00ccff',
+				borderOpacity: 1,
+				backgroundOpacity: 1
+			};
+			sprite.setStyle(focusStyle);
+			sprite.material = StyleManager.getInstance().compileStyle(focusStyle);
+			sprite.update();
+		});
+
+		sprite.events.on('blur', () => {
+			console.log(`Sprite blurred at position (${sprite.position.x.toFixed(1)}, ${sprite.position.y.toFixed(1)})`);
+			sprite.setStyle(sprite.userData.baseStyle);
+			sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
+			sprite.update();
 		});
 
 		this.scene.add(sprite);
@@ -184,7 +314,9 @@ class UI2DDemo {
 	}
 
 	private positionRelativeToEdges(): void {
-		if (this.sprites.length < 2) return;
+		if (this.sprites.length < 2) {
+			return;
+		}
 
 		// Position elements relative to each other's edges
 		for (let i = 1; i < this.sprites.length; i++) {
@@ -196,23 +328,172 @@ class UI2DDemo {
 			const offset = 10;
 			
 			switch (edge) {
-				case 0: // Right
-					current.position.x = target.position.x + target.size.x / 2 + current.size.x / 2 + offset;
-					current.position.y = target.position.y + (Math.random() - 0.5) * target.size.y;
-					break;
-				case 1: // Bottom
-					current.position.x = target.position.x + (Math.random() - 0.5) * target.size.x;
-					current.position.y = target.position.y - target.size.y / 2 - current.size.y / 2 - offset;
-					break;
-				case 2: // Left
-					current.position.x = target.position.x - target.size.x / 2 - current.size.x / 2 - offset;
-					current.position.y = target.position.y + (Math.random() - 0.5) * target.size.y;
-					break;
-				case 3: // Top
-					current.position.x = target.position.x + (Math.random() - 0.5) * target.size.x;
-					current.position.y = target.position.y + target.size.y / 2 + current.size.y / 2 + offset;
-					break;
+			case 0: // Right
+				current.position.x = target.position.x + target.size.x / 2 + current.size.x / 2 + offset;
+				current.position.y = target.position.y + (Math.random() - 0.5) * target.size.y;
+				break;
+			case 1: // Bottom
+				current.position.x = target.position.x + (Math.random() - 0.5) * target.size.x;
+				current.position.y = target.position.y - target.size.y / 2 - current.size.y / 2 - offset;
+				break;
+			case 2: // Left
+				current.position.x = target.position.x - target.size.x / 2 - current.size.x / 2 - offset;
+				current.position.y = target.position.y + (Math.random() - 0.5) * target.size.y;
+				break;
+			case 3: // Top
+				current.position.x = target.position.x + (Math.random() - 0.5) * target.size.x;
+				current.position.y = target.position.y + target.size.y / 2 + current.size.y / 2 + offset;
+				break;
 			}
+		}
+	}
+
+	private selectSprite(sprite: Sprite2D | null): void {
+		// Blur previous selection
+		if (this.selectedSprite) {
+			this.selectedSprite.events.emitEvent('blur', { sprite: this.selectedSprite });
+		}
+		
+		this.selectedSprite = sprite;
+		
+		// Update UI
+		const selectedInfo = document.getElementById('selected-info')!;
+		const selectedPos = document.getElementById('selected-pos')!;
+		
+		if (sprite) {
+			sprite.events.emitEvent('focus', { sprite });
+			selectedInfo.style.display = 'block';
+			selectedPos.textContent = `(${sprite.position.x.toFixed(1)}, ${sprite.position.y.toFixed(1)})`;
+		} else {
+			selectedInfo.style.display = 'none';
+		}
+	}
+
+	private setupKeyboardEvents(): void {
+		window.addEventListener('keydown', (event) => {
+			if (!this.selectedSprite) {
+				return;
+			}
+			
+			console.log(`Key pressed: ${event.key} (code: ${event.code})`);
+			
+			// Visual feedback for key press
+			const currentStyle = this.selectedSprite.getStyle()!;
+			
+			switch(event.key) {
+			case 'ArrowUp':
+				event.preventDefault();
+				this.selectedSprite.position.y += 10;
+				this.flashSprite(this.selectedSprite, '#00ff00');
+				this.updateSelectedPosition();
+				break;
+			case 'ArrowDown': 
+				event.preventDefault();
+				this.selectedSprite.position.y -= 10;
+				this.flashSprite(this.selectedSprite, '#ff0000');
+				this.updateSelectedPosition();
+				break;
+			case 'ArrowLeft':
+				event.preventDefault();
+				this.selectedSprite.position.x -= 10;
+				this.flashSprite(this.selectedSprite, '#0000ff');
+				this.updateSelectedPosition();
+				break;
+			case 'ArrowRight':
+				event.preventDefault();
+				this.selectedSprite.position.x += 10;
+				this.flashSprite(this.selectedSprite, '#ffff00');
+				this.updateSelectedPosition();
+				break;
+			case ' ':
+				event.preventDefault();
+				// Rotate sprite
+				this.selectedSprite.rotation.z += Math.PI / 4;
+				this.flashSprite(this.selectedSprite, '#ff00ff');
+				break;
+			case 'Delete':
+			case 'Backspace':
+				event.preventDefault();
+				// Remove selected sprite
+				const index = this.sprites.indexOf(this.selectedSprite);
+				if (index > -1) {
+					this.sprites.splice(index, 1);
+					this.scene.remove(this.selectedSprite);
+					this.selectedSprite.destroy();
+					this.selectedSprite = null;
+					this.updateStats();
+				}
+				break;
+			default:
+				// Flash white for any other key
+				this.flashSprite(this.selectedSprite, '#ffffff');
+			}
+		});
+		
+		window.addEventListener('keyup', (event) => {
+			if (!this.selectedSprite) {
+				return;
+			}
+			
+			// Restore focus style after key release
+			this.selectedSprite.setStyle({
+				...this.selectedSprite.userData.baseStyle,
+				borderWidth: 4,
+				borderColor: '#00ccff',
+				borderOpacity: 1,
+				backgroundOpacity: 1
+			});
+			this.selectedSprite.material = StyleManager.getInstance().compileStyle(this.selectedSprite.getStyle()!);
+		});
+		
+		// Click on background to deselect
+		this.view.canvas.addEventListener('click', (event) => {
+			const rect = this.view.canvas.getBoundingClientRect();
+			const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+			const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+			
+			// Simple hit test - check if click is on any sprite
+			let hitSprite = false;
+			for (const sprite of this.sprites) {
+				const worldPos = new THREE.Vector3();
+				sprite.getWorldPosition(worldPos);
+				
+				// Convert to screen space
+				const screenPos = worldPos.project(this.view.camera);
+				
+				// Check if click is within sprite bounds (rough approximation)
+				const dx = Math.abs(x - screenPos.x);
+				const dy = Math.abs(y - screenPos.y);
+				const threshold = 0.1; // Adjust based on sprite size
+				
+				if (dx < threshold && dy < threshold) {
+					hitSprite = true;
+					break;
+				}
+			}
+			
+			if (!hitSprite) {
+				this.selectSprite(null);
+			}
+		});
+	}
+
+	private flashSprite(sprite: Sprite2D, color: string): void {
+		sprite.setStyle({
+			...sprite.getStyle()!,
+			backgroundColor: color,
+			backgroundOpacity: 1,
+			borderWidth: 6,
+			borderColor: color,
+			borderOpacity: 1
+		});
+		sprite.material = StyleManager.getInstance().compileStyle(sprite.getStyle()!);
+	}
+
+	private updateSelectedPosition(): void {
+		if (this.selectedSprite) {
+			const selectedPos = document.getElementById('selected-pos')!;
+			selectedPos.textContent = `(${this.selectedSprite.position.x.toFixed(1)}, ${this.selectedSprite.position.y.toFixed(1)})`;
 		}
 	}
 
@@ -222,6 +503,7 @@ class UI2DDemo {
 			sprite.destroy();
 		});
 		this.sprites = [];
+		this.selectedSprite = null;
 		this.updateStats();
 		StyleManager.getInstance().clearCache();
 	}
@@ -369,6 +651,9 @@ class UI2DDemo {
 			this.fpsTime = currentTime;
 		}
 
+		// Flush any pending updates before render
+		this.scene.flushUpdates();
+		
 		// Render
 		this.scene.renderAllViews();
 	}

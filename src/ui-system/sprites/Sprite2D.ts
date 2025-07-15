@@ -211,6 +211,13 @@ export class Sprite2D extends Sprite {
 		const offsetX = -this._size.x * (this._origin.x - 0.5);
 		const offsetY = -this._size.y * (this._origin.y - 0.5);
 		this._mesh.position.set(offsetX, offsetY, 0);
+		
+		// Update size uniform if using shader material
+		if (this._mesh.material instanceof THREE.ShaderMaterial) {
+			if (this._mesh.material.uniforms.size) {
+				this._mesh.material.uniforms.size.value.set(this._size.x, this._size.y);
+			}
+		}
 	}
 
 	/**
@@ -222,6 +229,14 @@ export class Sprite2D extends Sprite {
 	public updateMaterial(): void {
 		if (this._material) {
 			this._mesh.material = this._material.threeMaterial;
+			
+			// Update size uniform for shader materials
+			if (this._material.threeMaterial instanceof THREE.ShaderMaterial) {
+				if (this._material.threeMaterial.uniforms.size) {
+					this._material.threeMaterial.uniforms.size.value.set(this._size.x, this._size.y);
+				}
+			}
+			
 			this._material.update();
 		}
 	}

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { View, type InputEvent } from './View';
 import { Scene } from './Scene';
+import type { Sprite } from '../sprites/Sprite';
 
 /**
  * Specialized view for 2D content with orthographic camera and 2D navigation controls.
@@ -52,6 +53,24 @@ export class View2D extends View {
 	 * @private
 	 */
 	private isDragging = false;
+
+	/**
+	 * Raycaster for sprite interaction.
+	 * @private
+	 */
+	private raycaster = new THREE.Raycaster();
+
+	/**
+	 * Currently hovered sprite.
+	 * @private
+	 */
+	private hoveredSprite: Sprite | null = null;
+
+	/**
+	 * Currently pressed sprite.
+	 * @private
+	 */
+	private pressedSprite: Sprite | null = null;
 
 	/**
 	 * Creates a new View2D instance.
@@ -269,6 +288,7 @@ export class View2D extends View {
 		this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
 		this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
 		this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+		this.canvas.addEventListener('mouseleave', this.onMouseLeave.bind(this));
 		this.canvas.addEventListener('wheel', this.onWheel.bind(this));
 		this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 	}
@@ -280,7 +300,18 @@ export class View2D extends View {
 	 * @returns {void}
 	 */
 	private onMouseDown(event: MouseEvent): void {
-		if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
+		// Check for sprite interaction first
+		const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+		
+		if (sprite && event.button === 0 && !event.shiftKey) {
+			this.pressedSprite = sprite;
+			sprite.events.emitEvent('drag:start', { 
+				sprite, 
+				event, 
+				startPosition: new THREE.Vector2(event.clientX, event.clientY) 
+			});
+			event.preventDefault();
+		} else if (event.button === 1 || (event.button === 0 && event.shiftKey)) {
 			this.isDragging = true;
 			this.lastMousePosition.set(event.clientX, event.clientY);
 			event.preventDefault();
@@ -301,6 +332,46 @@ export class View2D extends View {
 			const deltaY = event.clientY - this.lastMousePosition.y;
 			this.pan(deltaX, deltaY);
 			this.lastMousePosition.set(event.clientX, event.clientY);
+		} else if (this.pressedSprite) {
+			// Handle sprite dragging
+			const delta = new THREE.Vector2(
+				event.clientX - this.lastMousePosition.x,
+				event.clientY - this.lastMousePosition.y
+			);
+			this.pressedSprite.events.emitEvent('drag', { 
+				sprite: this.pressedSprite, 
+				delta, 
+				event 
+			});
+			this.lastMousePosition.set(event.clientX, event.clientY);
+		} else {
+			// Update last mouse position for potential drag start
+			this.lastMousePosition.set(event.clientX, event.clientY);
+			// Check for hover
+			const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+			
+			if (sprite !== this.hoveredSprite) {
+				// Exit previous hover
+				if (this.hoveredSprite) {
+					console.log('Hover exit:', this.hoveredSprite);
+					this.hoveredSprite.events.emitEvent('hover:exit', { 
+						sprite: this.hoveredSprite, 
+						event 
+					});
+				}
+				
+				// Enter new hover
+				if (sprite) {
+					console.log('Hover enter:', sprite);
+					sprite.events.emitEvent('hover:enter', { 
+						sprite, 
+						event, 
+						intersection: {} as THREE.Intersection 
+					});
+				}
+				
+				this.hoveredSprite = sprite;
+			}
 		}
 	}
 
@@ -311,6 +382,60 @@ export class View2D extends View {
 	 * @returns {void}
 	 */
 	private onMouseUp(event: MouseEvent): void {
+		if (this.pressedSprite) {
+			// Check if mouse is still over the pressed sprite for click
+			const sprite = this.getSpriteAtPosition(event.clientX, event.clientY);
+			
+			if (sprite === this.pressedSprite) {
+				// It's a click
+				console.log('Click:', sprite);
+				sprite.events.emitEvent('click', { 
+					sprite, 
+					event, 
+					intersection: {} as THREE.Intersection 
+				});
+			}
+			
+			// End drag
+			this.pressedSprite.events.emitEvent('drag:end', { 
+				sprite: this.pressedSprite, 
+				event, 
+				endPosition: new THREE.Vector2(event.clientX, event.clientY) 
+			});
+			
+			this.pressedSprite = null;
+		}
+		
+		this.isDragging = false;
+	}
+
+	/**
+	 * Handles mouse leave event.
+	 * @private
+	 * @param {MouseEvent} event - Mouse event
+	 * @returns {void}
+	 */
+	private onMouseLeave(event: MouseEvent): void {
+		// Clear hover state when mouse leaves canvas
+		if (this.hoveredSprite) {
+			console.log('Mouse left canvas, clearing hover');
+			this.hoveredSprite.events.emitEvent('hover:exit', { 
+				sprite: this.hoveredSprite, 
+				event 
+			});
+			this.hoveredSprite = null;
+		}
+		
+		// Cancel any drag operation
+		if (this.pressedSprite) {
+			this.pressedSprite.events.emitEvent('drag:end', { 
+				sprite: this.pressedSprite, 
+				event, 
+				endPosition: new THREE.Vector2(event.clientX, event.clientY) 
+			});
+			this.pressedSprite = null;
+		}
+		
 		this.isDragging = false;
 	}
 
@@ -347,5 +472,45 @@ export class View2D extends View {
 	private handleWheelEvent(event: WheelEvent): boolean {
 		this.onWheel(event);
 		return true;
+	}
+
+	/**
+	 * Gets sprite at screen position.
+	 * @private
+	 * @param {number} x - Screen X coordinate
+	 * @param {number} y - Screen Y coordinate
+	 * @returns {Sprite | null} Sprite at position or null
+	 */
+	private getSpriteAtPosition(x: number, y: number): Sprite | null {
+		const rect = this.canvas.getBoundingClientRect();
+		const mouse = new THREE.Vector2(
+			((x - rect.left) / rect.width) * 2 - 1,
+			-((y - rect.top) / rect.height) * 2 + 1
+		);
+		
+		this.raycaster.setFromCamera(mouse, this.camera);
+		
+		// Get all meshes from sprites
+		const meshes: THREE.Mesh[] = [];
+		const spriteMap = new Map<THREE.Mesh, Sprite>();
+		
+		this.scene.traverse((obj) => {
+			if ('markNeedsUpdate' in obj && 'mesh' in obj) {
+				const sprite = obj as unknown as Sprite;
+				if (sprite.mesh) {
+					meshes.push(sprite.mesh);
+					spriteMap.set(sprite.mesh, sprite);
+				}
+			}
+		});
+		
+		const intersects = this.raycaster.intersectObjects(meshes, false);
+		
+		if (intersects.length > 0) {
+			const mesh = intersects[0].object as THREE.Mesh;
+			return spriteMap.get(mesh) || null;
+		}
+		
+		return null;
 	}
 }
