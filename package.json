@@ -24,6 +24,7 @@
   "devDependencies": {
     "@eslint/js": "^9.30.1",
     "@types/node": "^24.0.13",
+    "@types/three": "^0.178.1",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
     "better-docs": "^2.7.3",

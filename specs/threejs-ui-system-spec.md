@@ -2,7 +2,8 @@
 
 ## Overview
 
-This specification defines a GPU-accelerated UI system built on Three.js that supports both 2D interface elements and 3D content. The system is designed to provide efficient rendering while maintaining direct access to Three.js primitives.
+This specification defines a GPU-accelerated UI system built on Three.js that supports both 2D interface elements and 3D
+content. The system is designed to provide efficient rendering while maintaining direct access to Three.js primitives.
 
 ### Core Principles
 
@@ -38,11 +39,13 @@ class Scene extends THREE.Scene {
 ```
 
 **Key Features:**
+
 - Multiple views can render the same scene with different cameras/viewports
 - Centralized update queue for efficient batch processing
 - Automatic view registration when views are created
 
 **Usage Example:**
+
 ```typescript
 const scene = new Scene();
 const topView = new View2D(scene, new THREE.OrthographicCamera());
@@ -83,6 +86,7 @@ abstract class View {
 ```
 
 **Key Features:**
+
 - Direct access to Three.js camera (no abstraction layer)
 - Flexible viewport system for multi-view layouts
 - Event handling with consumption semantics
@@ -117,6 +121,7 @@ class View2D extends View {
 ```
 
 **Key Features:**
+
 - Orthographic camera setup optimized for 2D content
 - Pan and zoom controls with configurable limits
 - Coordinate conversion utilities
@@ -151,6 +156,7 @@ class View3D extends View {
 ```
 
 **Key Features:**
+
 - Perspective camera with standard 3D controls
 - Orbit, pan, dolly navigation
 - Content fitting with bounding box calculation
@@ -196,20 +202,20 @@ abstract class Sprite extends THREE.Object3D {
   abstract get mesh(): THREE.Mesh
   get geometry(): THREE.BufferGeometry
   
-  // Event system integration
-  onPointerEvent(event: PointerEvent, camera: THREE.Camera): boolean
-  addEventListener(type: string, listener: EventListener): void
-  removeEventListener(type: string, listener: EventListener): void
+  // Input handling (managed by InputManager)
+  handlePointerEvent(event: PointerEvent, camera: THREE.Camera): boolean
 }
 ```
 
 **Key Features:**
+
 - Size-based positioning with configurable origin point
 - Efficient update queue system
 - Event handling through raycasting
 - Direct access to underlying Three.js mesh and geometry
 
 **Origin System:**
+
 - `(0, 0)` = bottom-left corner
 - `(0.5, 0.5)` = center (default)
 - `(1, 1)` = top-right corner
@@ -250,6 +256,7 @@ class Sprite2D extends Sprite {
 ```
 
 **Key Features:**
+
 - Plane geometry optimized for UI elements
 - Texture support for images and text
 - Style system integration
@@ -289,6 +296,7 @@ class Sprite3D extends Sprite {
 ```
 
 **Key Features:**
+
 - Support for any Three.js geometry
 - Shadow casting and receiving
 - LOD (Level of Detail) support
@@ -368,6 +376,7 @@ class BasicMaterial extends Material {
 ```
 
 **Border System:**
+
 - Borders are rendered using custom shaders
 - Support for solid, dashed, and dotted styles
 - Per-corner border radius support
@@ -503,6 +512,7 @@ class InstancedSprite2D extends Sprite2D {
 ```
 
 **Performance Benefits:**
+
 - Single draw call for hundreds/thousands of similar objects
 - GPU-side positioning and scaling
 - Ideal for UI grids, particle systems, repeated 3D objects
@@ -535,42 +545,142 @@ interface UpdateManager {
 
 ### Event Types
 
+Event maps define the available events and their payloads for each component:
+
 ```typescript
+interface SceneEventMap {
+  'sprite:added': { sprite: Sprite };
+  'sprite:removed': { sprite: Sprite };
+  'render:start': { timestamp: number };
+  'render:end': { timestamp: number; duration: number };
+  'update:start': { updateCount: number };
+  'update:end': { updateCount: number; duration: number };
+}
+
+interface ViewEventMap {
+  'resize': { width: number; height: number };
+  'camera:change': { camera: THREE.Camera };
+  'viewport:change': { x: number; y: number; width: number; height: number };
+  'render': { timestamp: number };
+  'focus': { view: View };
+  'blur': { view: View };
+}
+
 interface SpriteEventMap {
   'click': { sprite: Sprite; event: MouseEvent; intersection: THREE.Intersection };
-  'hover': { sprite: Sprite; event: MouseEvent; intersection: THREE.Intersection };
+  'hover:enter': { sprite: Sprite; event: MouseEvent; intersection: THREE.Intersection };
+  'hover:exit': { sprite: Sprite; event: MouseEvent };
+  'drag:start': { sprite: Sprite; event: MouseEvent; startPosition: THREE.Vector2 };
   'drag': { sprite: Sprite; delta: THREE.Vector2; event: MouseEvent };
-  'dragstart': { sprite: Sprite; event: MouseEvent };
-  'dragend': { sprite: Sprite; event: MouseEvent };
+  'drag:end': { sprite: Sprite; event: MouseEvent; endPosition: THREE.Vector2 };
   'transform': { sprite: Sprite; transform: THREE.Matrix4 };
-  'resize': { sprite: Sprite; size: THREE.Vector2 };
+  'resize': { sprite: Sprite; oldSize: THREE.Vector2; newSize: THREE.Vector2 };
   'focus': { sprite: Sprite };
   'blur': { sprite: Sprite };
+  'destroy': { sprite: Sprite };
+}
+
+interface MaterialEventMap {
+  'update': { material: Material };
+  'shader:upgrade': { material: Material; fromType: string; toType: string };
+  'texture:load': { material: Material; texture: THREE.Texture };
+  'texture:error': { material: Material; error: Error };
 }
 ```
 
-### Input Handling
+### EventEmitter Integration Pattern
+
+Each component that needs events maintains an `events` property of the EventEmitter class:
 
 ```typescript
-class InputManager {
-  private raycaster: THREE.Raycaster = new THREE.Raycaster();
-  private pickableSprites: Set<Sprite> = new Set();
+import { EventEmitter } from './EventEmitter';
+
+// Components extend or compose with EventEmitter
+class Scene extends THREE.Scene {
+  public readonly events = new EventEmitter<SceneEventMap>();
+  private views: Set<View> = new Set();
+  private updateQueue: Set<Sprite> = new Set();
   
-  // Registration
-  registerSprite(sprite: Sprite): void
-  unregisterSprite(sprite: Sprite): void
+  addView(view: View): void {
+    this.views.add(view);
+    this.events.emitEvent('sprite:added', { sprite: view as any }); // Will be refined
+  }
   
-  // Event processing
-  handlePointerEvent(event: PointerEvent, view: View): boolean
-  handleKeyboardEvent(event: KeyboardEvent, view: View): boolean
+  removeView(view: View): void {
+    this.views.delete(view);
+    this.events.emitEvent('sprite:removed', { sprite: view as any });
+  }
   
-  // Hit testing
-  getSpritesAtPoint(point: THREE.Vector2, camera: THREE.Camera): Sprite[]
-  getTopSpriteAtPoint(point: THREE.Vector2, camera: THREE.Camera): Sprite | null
+  renderAllViews(): void {
+    this.events.emitEvent('render:start', { timestamp: performance.now() });
+    const startTime = performance.now();
+    
+    this.flushUpdates();
+    this.views.forEach(view => view.render());
+    
+    const duration = performance.now() - startTime;
+    this.events.emitEvent('render:end', { timestamp: performance.now(), duration });
+  }
+}
+
+class View {
+  public readonly events = new EventEmitter<ViewEventMap>();
+  readonly canvas: HTMLCanvasElement;
+  readonly renderer: THREE.WebGLRenderer;
+  readonly scene: Scene;
+  readonly camera: THREE.Camera;
   
-  // Configuration
-  setPickingLayers(layers: number[]): void
-  setPickingDistance(distance: number): void
+  resize(width: number, height: number): void {
+    // Resize logic...
+    this.events.emitEvent('resize', { width, height });
+  }
+  
+  render(): void {
+    this.renderer.render(this.scene, this.camera);
+    this.events.emitEvent('render', { timestamp: performance.now() });
+  }
+}
+
+class Sprite extends THREE.Object3D {
+  public readonly events = new EventEmitter<SpriteEventMap>();
+  protected _size: THREE.Vector2 = new THREE.Vector2(100, 100);
+  protected _origin: THREE.Vector2 = new THREE.Vector2(0.5, 0.5);
+  
+  set size(value: THREE.Vector2) {
+    const oldSize = this._size.clone();
+    this._size.copy(value);
+    this.markNeedsUpdate();
+    this.events.emitEvent('resize', { sprite: this, oldSize, newSize: this._size });
+  }
+  
+  destroy(): void {
+    this.events.emitEvent('destroy', { sprite: this });
+    this.events.dispose(); // Clean up event listeners
+    // Additional cleanup...
+  }
+}
+
+class Material {
+  public readonly events = new EventEmitter<MaterialEventMap>();
+  protected _threeMaterial: THREE.Material;
+  
+  setTexture(texture: THREE.Texture | null): void {
+    // Set texture logic...
+    if (texture) {
+      this.events.emitEvent('texture:load', { material: this, texture });
+    }
+    this.events.emitEvent('update', { material: this });
+  }
+  
+  protected upgradeToShaderMaterial(): void {
+    const fromType = this._threeMaterial.type;
+    // Upgrade logic...
+    this.events.emitEvent('shader:upgrade', { 
+      material: this, 
+      fromType, 
+      toType: 'ShaderMaterial' 
+    });
+  }
 }
 ```
 
@@ -579,6 +689,8 @@ class InputManager {
 ### Basic 2D UI Setup
 
 ```typescript
+import { EventEmitter } from './EventEmitter';
+
 // Create scene and views
 const scene = new Scene();
 const canvas = document.createElement('canvas');
@@ -593,8 +705,17 @@ button.setStyle({
   borderRadius: 4
 });
 
-button.addEventListener('click', (event) => {
-  console.log('Button clicked!');
+// Event handling with the events property
+button.events.on('click', (data) => {
+  console.log('Button clicked!', data.sprite);
+});
+
+button.events.on('hover:enter', (data) => {
+  button.setStyle({ backgroundColor: '#5BA0F2' }); // Hover effect
+});
+
+button.events.on('hover:exit', (data) => {
+  button.setStyle({ backgroundColor: '#4A90E2' }); // Reset
 });
 
 scene.add(button);
@@ -605,6 +726,15 @@ view2D.render();
 
 ```typescript
 const scene = new Scene();
+
+// Listen to scene events
+scene.events.on('render:start', (data) => {
+  console.log('Starting render at', data.timestamp);
+});
+
+scene.events.on('render:end', (data) => {
+  console.log(`Render completed in ${data.duration}ms`);
+});
 
 // Create different camera perspectives
 const topCamera = new THREE.OrthographicCamera();
@@ -619,10 +749,19 @@ const perspCamera = new THREE.PerspectiveCamera(75);
 perspCamera.position.set(50, 50, 50);
 perspCamera.lookAt(0, 0, 0);
 
-// Create views
+// Create views with event handling
 const topView = new View2D(scene, topCamera);
 const frontView = new View2D(scene, frontCamera);
 const perspView = new View3D(scene, perspCamera);
+
+// Listen to view events
+topView.events.on('resize', (data) => {
+  console.log(`Top view resized to ${data.width}x${data.height}`);
+});
+
+perspView.events.on('camera:change', (data) => {
+  console.log('3D camera moved', data.camera.position);
+});
 
 // All views automatically render the same scene content
 scene.renderAllViews();
@@ -641,6 +780,16 @@ const material3D = new PhysicalMaterial({
   roughness: 0.4
 });
 const cube = new Sprite3D(geometry, material3D);
+
+// Listen to 3D object events
+cube.events.on('click', (data) => {
+  console.log('3D cube clicked!');
+});
+
+cube.events.on('transform', (data) => {
+  console.log('Cube transformed:', data.transform);
+});
+
 scene.add(cube);
 
 // Add 2D UI overlay
@@ -650,14 +799,75 @@ label.setStyle({
   borderRadius: 4
 });
 label.position.set(0, 15, 0); // Position above cube
+
+// Connect label to cube events
+cube.events.on('click', () => {
+  label.setStyle({ backgroundColor: 'rgba(255, 0, 0, 0.8)' });
+});
+
 scene.add(label);
 
 // Both 3D and 2D content render together
 ```
 
+### Event System Cross-Component Communication
+
+```typescript
+// Example: Synchronized multi-view navigation
+class QuadViewController {
+  private views: View[] = [];
+  
+  constructor(scene: Scene) {
+    this.setupViews(scene);
+    this.setupEventHandlers();
+  }
+  
+  private setupEventHandlers(): void {
+    // When one view changes, update others
+    this.views.forEach(view => {
+      view.events.on('camera:change', (data) => {
+        this.synchronizeOtherViews(view, data.camera);
+      });
+    });
+  }
+  
+  private synchronizeOtherViews(changedView: View, camera: THREE.Camera): void {
+    this.views.forEach(view => {
+      if (view !== changedView) {
+        // Update other views based on the camera change
+        // Implementation depends on view type and synchronization needs
+      }
+    });
+  }
+}
+
+// Example: Material system responding to sprite events
+class SmartMaterial extends BasicMaterial {
+  constructor(sprite: Sprite) {
+    super();
+    this.setupSpriteEventHandlers(sprite);
+  }
+  
+  private setupSpriteEventHandlers(sprite: Sprite): void {
+    sprite.events.on('hover:enter', () => {
+      this.setFillColor('#FF6B6B'); // Red on hover
+    });
+    
+    sprite.events.on('hover:exit', () => {
+      this.setFillColor('#4ECDC4'); // Teal normally
+    });
+    
+    sprite.events.on('click', () => {
+      this.setBorderWidth(4); // Thicker border when clicked
+    });
+  }
+}
+```
+
 ## Implementation Notes
 
 ### File Structure
+
 ```
 src/
   core/
@@ -686,11 +896,13 @@ src/
 ```
 
 ### Dependencies
+
 - Three.js (r128+)
 - TypeScript 4.5+
-- Custom EventEmitter implementation
+- Custom EventEmitter implementation (provided)
 
 ### Performance Considerations
+
 - Use instanced rendering for >50 similar objects
 - Implement frustum culling for large scenes
 - Batch style updates to minimize shader recompilation
@@ -698,6 +910,7 @@ src/
 - Implement LOD for complex 3D objects
 
 ### Future Extensions
+
 - Animation system integration
 - Layout system (flexbox-style)
 - Text rendering system

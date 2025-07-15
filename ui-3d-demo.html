@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>3D Sprites & Animation Demo - Fantoccini</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background-color: #0a0a0a;
+		}
+		
+		#canvas-container {
+			width: 100vw;
+			height: 100vh;
+			position: relative;
+		}
+		
+		.controls {
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			background-color: rgba(26, 26, 26, 0.9);
+			padding: 20px;
+			border-radius: 8px;
+			backdrop-filter: blur(10px);
+			color: white;
+			z-index: 100;
+			min-width: 280px;
+		}
+		
+		.controls h2 {
+			margin-top: 0;
+			color: #00ff88;
+			font-size: 18px;
+			margin-bottom: 15px;
+		}
+		
+		.control-group {
+			margin-bottom: 15px;
+		}
+		
+		.control-group label {
+			display: block;
+			margin-bottom: 5px;
+			font-size: 14px;
+			color: #ccc;
+		}
+		
+		.control-group button {
+			background-color: #00ff88;
+			color: #0a0a0a;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 4px;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: background-color 0.2s;
+			margin-right: 10px;
+			margin-bottom: 5px;
+		}
+		
+		.control-group button:hover {
+			background-color: #00cc6a;
+		}
+		
+		.control-group button:active {
+			transform: translateY(1px);
+		}
+		
+		.control-group button.active {
+			background-color: #ff6b6b;
+		}
+		
+		.slider-group {
+			margin-bottom: 10px;
+		}
+		
+		.slider-group input[type="range"] {
+			width: 100%;
+			margin-top: 5px;
+		}
+		
+		.slider-value {
+			display: inline-block;
+			width: 50px;
+			text-align: right;
+			color: #00ccff;
+			font-family: monospace;
+		}
+		
+		.stats {
+			margin-top: 20px;
+			padding-top: 20px;
+			border-top: 1px solid #333;
+			font-size: 12px;
+			color: #888;
+		}
+		
+		.stats div {
+			margin-bottom: 5px;
+		}
+		
+		.back-link {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			color: #00ccff;
+			text-decoration: none;
+			background: rgba(26, 26, 26, 0.9);
+			padding: 10px 20px;
+			border-radius: 4px;
+			z-index: 100;
+		}
+		
+		.back-link:hover {
+			background: rgba(0, 204, 255, 0.2);
+		}
+		
+		.help-text {
+			position: absolute;
+			bottom: 20px;
+			left: 20px;
+			color: #666;
+			font-size: 14px;
+			background: rgba(26, 26, 26, 0.9);
+			padding: 10px 15px;
+			border-radius: 4px;
+		}
+		
+		.help-text kbd {
+			background: #333;
+			padding: 2px 6px;
+			border-radius: 3px;
+			margin: 0 2px;
+		}
+		
+		.selected-info {
+			margin-top: 15px;
+			padding: 10px;
+			background: #2a2a2a;
+			border-radius: 4px;
+			font-size: 12px;
+		}
+		
+		.selected-info.hidden {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<div id="canvas-container"></div>
+	
+	<div class="controls">
+		<h2>3D Sprites & Animation Demo</h2>
+		
+		<div class="control-group">
+			<label>3D Objects</label>
+			<button id="add-cube">Add Cube</button>
+			<button id="add-sphere">Add Sphere</button>
+			<button id="add-torus">Add Torus</button>
+			<button id="add-many">Add 20 Random</button>
+			<button id="clear-all">Clear All</button>
+		</div>
+		
+		<div class="control-group">
+			<label>Animations</label>
+			<button id="anim-rotate" class="active">Rotate</button>
+			<button id="anim-bounce">Bounce</button>
+			<button id="anim-orbit">Orbit</button>
+			<button id="anim-wave">Wave</button>
+			<button id="stop-animation">Stop All</button>
+		</div>
+		
+		<div class="control-group">
+			<label>Helpers</label>
+			<button id="toggle-grid">Toggle Grid</button>
+			<button id="toggle-axes">Toggle Axes</button>
+			<button id="toggle-shadows">Toggle Shadows</button>
+		</div>
+		
+		<div class="control-group">
+			<label>Animation Speed</label>
+			<div class="slider-group">
+				<input type="range" id="speed-slider" min="0" max="200" value="100">
+				<span class="slider-value" id="speed-value">100%</span>
+			</div>
+		</div>
+		
+		<div class="selected-info hidden" id="selected-info">
+			<strong>Selected Object</strong>
+			<div>Type: <span id="selected-type">-</span></div>
+			<div>Position: <span id="selected-pos">-</span></div>
+			<div>Material: <span id="selected-mat">-</span></div>
+		</div>
+		
+		<div class="stats">
+			<div>Objects: <span id="object-count">0</span></div>
+			<div>FPS: <span id="fps">0</span></div>
+			<div>Render Time: <span id="render-time">0</span>ms</div>
+		</div>
+	</div>
+	
+	<a href="/" class="back-link">← Back to demos</a>
+	
+	<div class="help-text">
+		<kbd>Left Click</kbd> + <kbd>Drag</kbd> to orbit • <kbd>Right Click</kbd> + <kbd>Drag</kbd> to pan • <kbd>Scroll</kbd> to zoom • <kbd>Click</kbd> objects to select
+	</div>
+	
+	<script type="module" src="/src/ui-3d-demo.ts"></script>
+</body>
+</html>
