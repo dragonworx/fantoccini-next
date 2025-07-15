@@ -490,25 +490,34 @@ export class View2D extends View {
 		
 		this.raycaster.setFromCamera(mouse, this.camera);
 		
-		// Get all meshes from sprites
-		const meshes: THREE.Mesh[] = [];
-		const spriteMap = new Map<THREE.Mesh, Sprite>();
-		
+		// Collect all sprites
+		const sprites: Sprite[] = [];
 		this.scene.traverse((obj) => {
 			if ('markNeedsUpdate' in obj && 'mesh' in obj) {
-				const sprite = obj as unknown as Sprite;
-				if (sprite.mesh) {
-					meshes.push(sprite.mesh);
-					spriteMap.set(sprite.mesh, sprite);
-				}
+				sprites.push(obj as unknown as Sprite);
 			}
 		});
 		
-		const intersects = this.raycaster.intersectObjects(meshes, false);
+		// Sort sprites by their world Z position (highest first)
+		// This ensures we check sprites in visual order
+		sprites.sort((a, b) => {
+			const aPos = new THREE.Vector3();
+			const bPos = new THREE.Vector3();
+			a.getWorldPosition(aPos);
+			b.getWorldPosition(bPos);
+			return bPos.z - aPos.z; // Higher z first
+		});
 		
-		if (intersects.length > 0) {
-			const mesh = intersects[0].object as THREE.Mesh;
-			return spriteMap.get(mesh) || null;
+		// Test sprites one by one in z-order
+		for (const sprite of sprites) {
+			if (!sprite.mesh) continue;
+			
+			const intersects = this.raycaster.intersectObject(sprite.mesh, false);
+			if (intersects.length > 0) {
+				// Found a hit on this sprite, and since we're testing in z-order,
+				// this is the topmost sprite at this position
+				return sprite;
+			}
 		}
 		
 		return null;

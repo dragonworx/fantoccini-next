@@ -150,7 +150,7 @@ class UI2DDemo {
 			y = (Math.random() - 0.5) * bounds.height * 0.8;
 		}
 		
-		sprite.position.set(x, y, 0);
+		sprite.position.set(x, y, Math.random() * 2); // Add slight z variation for testing
 
 		// Random color and base style
 		const color = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
@@ -198,6 +198,7 @@ class UI2DDemo {
 		
 		sprite.setStyle(baseStyle);
 		sprite.userData.baseStyle = baseStyle;
+		sprite.userData.name = `Sprite ${this.sprites.length + 1}`;
 		
 		// Apply style through material
 		const material = StyleManager.getInstance().compileStyle(sprite.getStyle()!);
@@ -446,35 +447,28 @@ class UI2DDemo {
 			this.selectedSprite.material = StyleManager.getInstance().compileStyle(this.selectedSprite.getStyle()!);
 		});
 		
-		// Click on background to deselect
+		// Handle click on empty space to deselect
+		// We need to check if a sprite was clicked after View2D processes the event
 		this.view.canvas.addEventListener('click', (event) => {
-			const rect = this.view.canvas.getBoundingClientRect();
-			const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-			const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-			
-			// Simple hit test - check if click is on any sprite
-			let hitSprite = false;
-			for (const sprite of this.sprites) {
-				const worldPos = new THREE.Vector3();
-				sprite.getWorldPosition(worldPos);
-				
-				// Convert to screen space
-				const screenPos = worldPos.project(this.view.camera);
-				
-				// Check if click is within sprite bounds (rough approximation)
-				const dx = Math.abs(x - screenPos.x);
-				const dy = Math.abs(y - screenPos.y);
-				const threshold = 0.1; // Adjust based on sprite size
-				
-				if (dx < threshold && dy < threshold) {
-					hitSprite = true;
-					break;
+			// Use a small timeout to let View2D process the click first
+			setTimeout(() => {
+				// If no sprite handled the click, clear selection
+				if (!event.defaultPrevented) {
+					// Check if we clicked on empty space by seeing if any sprite was under the cursor
+					const rect = this.view.canvas.getBoundingClientRect();
+					const x = event.clientX;
+					const y = event.clientY;
+					
+					// Use View2D's sprite detection (via reflection since it's private)
+					const viewAny = this.view as any;
+					if (viewAny.getSpriteAtPosition) {
+						const sprite = viewAny.getSpriteAtPosition(x, y);
+						if (!sprite) {
+							this.selectSprite(null);
+						}
+					}
 				}
-			}
-			
-			if (!hitSprite) {
-				this.selectSprite(null);
-			}
+			}, 0);
 		});
 	}
 
@@ -631,8 +625,9 @@ class UI2DDemo {
 	}
 
 	private handleResize(): void {
-		const width = window.innerWidth;
-		const height = window.innerHeight;
+		const container = document.getElementById('canvas-container')!;
+		const width = container.clientWidth;
+		const height = container.clientHeight;
 		this.view.resize(width, height);
 	}
 

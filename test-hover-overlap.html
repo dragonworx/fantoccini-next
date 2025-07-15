@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Hover Overlap Test - Fantoccini</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background-color: #0a0a0a;
+			display: flex;
+			color: white;
+		}
+		
+		#canvas-container {
+			flex: 1;
+			height: 100vh;
+			position: relative;
+		}
+		
+		.info {
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			background: rgba(0, 0, 0, 0.8);
+			padding: 20px;
+			border-radius: 8px;
+			font-size: 14px;
+			line-height: 1.6;
+			max-width: 400px;
+		}
+		
+		.info h2 {
+			margin-top: 0;
+			color: #00ff88;
+		}
+		
+		.info p {
+			margin: 10px 0;
+		}
+		
+		.debug {
+			position: absolute;
+			bottom: 20px;
+			left: 20px;
+			background: rgba(0, 0, 0, 0.8);
+			padding: 15px;
+			border-radius: 8px;
+			font-family: monospace;
+			font-size: 12px;
+		}
+		
+		.debug div {
+			margin: 5px 0;
+		}
+	</style>
+</head>
+<body>
+	<div id="canvas-container"></div>
+	
+	<div class="info">
+		<h2>Hover Overlap Test</h2>
+		<p>This test creates overlapping sprites with different z-positions to verify hover detection respects visual layering.</p>
+		<p><strong>Red sprite:</strong> z = 0 (bottom)</p>
+		<p><strong>Green sprite:</strong> z = 5 (middle)</p>
+		<p><strong>Blue sprite:</strong> z = 10 (top)</p>
+		<p>When hovering over overlapping areas, only the topmost sprite should show a hover border.</p>
+	</div>
+	
+	<div class="debug" id="debug">
+		<div>Hovered sprite: <span id="hovered">none</span></div>
+		<div>Mouse position: <span id="mouse">0, 0</span></div>
+		<div>Intersections: <span id="intersections">0</span></div>
+	</div>
+	
+	<script type="module">
+		import * as THREE from 'three';
+		import { 
+			Scene, 
+			View2D, 
+			Sprite2D, 
+			BasicMaterial,
+			StyleManager
+		} from './src/ui-system';
+
+		// Create scene
+		const scene = new Scene();
+
+		// Create view
+		const container = document.getElementById('canvas-container');
+		const canvas = document.createElement('canvas');
+		container.appendChild(canvas);
+		const view = new View2D(scene, undefined, canvas);
+		
+		// Set initial size
+		const handleResize = () => {
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+			view.resize(width, height);
+		};
+		handleResize();
+		window.addEventListener('resize', handleResize);
+
+		// Debug elements
+		const hoveredEl = document.getElementById('hovered');
+		const mouseEl = document.getElementById('mouse');
+		const intersectionsEl = document.getElementById('intersections');
+
+		// Create three overlapping sprites with different z-positions
+		const sprites = [];
+		
+		// Red sprite (bottom)
+		const redSprite = new Sprite2D(150, 150);
+		redSprite.position.set(-50, 0, 0);
+		redSprite.userData.name = 'Red (z=0)';
+		redSprite.userData.baseStyle = {
+			backgroundColor: '#ff0000',
+			backgroundOpacity: 1.0,
+			borderWidth: 3,
+			borderColor: '#ffffff',
+			borderOpacity: 0.3,
+			borderRadius: 10
+		};
+		redSprite.setStyle(redSprite.userData.baseStyle);
+		redSprite.material = StyleManager.getInstance().compileStyle(redSprite.getStyle());
+		scene.add(redSprite);
+		sprites.push(redSprite);
+		
+		// Green sprite (middle)
+		const greenSprite = new Sprite2D(150, 150);
+		greenSprite.position.set(0, 0, 5);
+		greenSprite.userData.name = 'Green (z=5)';
+		greenSprite.userData.baseStyle = {
+			backgroundColor: '#00ff00',
+			backgroundOpacity: 1.0,
+			borderWidth: 3,
+			borderColor: '#ffffff',
+			borderOpacity: 0.3,
+			borderRadius: 10
+		};
+		greenSprite.setStyle(greenSprite.userData.baseStyle);
+		greenSprite.material = StyleManager.getInstance().compileStyle(greenSprite.getStyle());
+		scene.add(greenSprite);
+		sprites.push(greenSprite);
+		
+		// Blue sprite (top)
+		const blueSprite = new Sprite2D(150, 150);
+		blueSprite.position.set(50, 0, 10);
+		blueSprite.userData.name = 'Blue (z=10)';
+		blueSprite.userData.baseStyle = {
+			backgroundColor: '#0000ff',
+			backgroundOpacity: 1.0,
+			borderWidth: 3,
+			borderColor: '#ffffff',
+			borderOpacity: 0.3,
+			borderRadius: 10
+		};
+		blueSprite.setStyle(blueSprite.userData.baseStyle);
+		blueSprite.material = StyleManager.getInstance().compileStyle(blueSprite.getStyle());
+		scene.add(blueSprite);
+		sprites.push(blueSprite);
+
+		// Setup hover events
+		sprites.forEach(sprite => {
+			sprite.events.on('hover:enter', () => {
+				hoveredEl.textContent = sprite.userData.name;
+				const hoverStyle = {
+					...sprite.getStyle(),
+					borderWidth: 6,
+					borderColor: '#00ffff',
+					borderOpacity: 1
+				};
+				sprite.setStyle(hoverStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(hoverStyle);
+				sprite.update();
+			});
+			
+			sprite.events.on('hover:exit', () => {
+				hoveredEl.textContent = 'none';
+				sprite.setStyle(sprite.userData.baseStyle);
+				sprite.material = StyleManager.getInstance().compileStyle(sprite.userData.baseStyle);
+				sprite.update();
+			});
+		});
+
+		// Mouse tracking
+		canvas.addEventListener('mousemove', (event) => {
+			const rect = canvas.getBoundingClientRect();
+			const x = event.clientX - rect.left;
+			const y = event.clientY - rect.top;
+			mouseEl.textContent = `${x.toFixed(0)}, ${y.toFixed(0)}`;
+			
+			// Debug: Check what raycaster sees
+			const mouse = new THREE.Vector2(
+				(x / rect.width) * 2 - 1,
+				-(y / rect.height) * 2 + 1
+			);
+			
+			const raycaster = new THREE.Raycaster();
+			raycaster.setFromCamera(mouse, view.camera);
+			
+			const meshes = sprites.map(s => s.mesh).filter(m => m !== null);
+			const intersects = raycaster.intersectObjects(meshes, false);
+			intersectionsEl.textContent = intersects.length;
+		});
+
+		// Animation loop
+		const animate = () => {
+			requestAnimationFrame(animate);
+			scene.flushUpdates();
+			scene.renderAllViews();
+		};
+		animate();
+	</script>
+</body>
+</html>
